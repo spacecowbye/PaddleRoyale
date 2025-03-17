@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Paddle Royale</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <a href="#">Home</a>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="text-content">
+            <h1>
+                <span class="white">PADDLE</span>
+                <span class="green">Royale</span>
+            </h1>
+            <p>
+                Experience the nostalgia of the original arcade classic, with modern powerups.
+                Simple, addictive, and competitive. Challenge your friends to show them you are the best.
+            </p>
+            <div class="buttons">
+                <button class="play" onclick="window.open('game.html', '_blank')">
+                    Play Now
+                </button>
+                <button class="learn">Learn More</button>
+            </div>
+        </div>
+        
+        <div class="game-preview">
+            <!-- Game visual elements -->
+            <div class="left-paddle"></div>
+            <div class="right-paddle"></div>
+            <div class="ball"></div>
+            <span class="score">0 : 0</span>
+            <div class="scanlines"></div>
+            
+            <!-- Preview overlay -->
+            <div class="preview-overlay">
+                <div class="play-icon"></div>
+            </div>
+            <div class="preview-label">PREVIEW</div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div>© 2025 Paddle Royale. All rights reserved.</div>
+        <div class="social-links">
+            <a href="#">Twitter</a>
+            <a href="#">Discord</a>
+            <a href="#">GitHub</a>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // Simple animation for the Learn More button
+        document.querySelector('.learn').addEventListener('click', function() {
+            alert('More information about Paddle Royale coming soon!');
+        });
+    </script>
+</body>
+</html>
