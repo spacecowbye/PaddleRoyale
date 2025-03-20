@@ -1,4 +1,5 @@
 // RoomManager.js
+const Room = require("./models/Room");
 class RoomManager {
     constructor() {
         this.adjectives = [
@@ -9,21 +10,40 @@ class RoomManager {
             "Fart", "Pickle", "Sandwich", "Jelly", "Banana", "Donut",
             "Penguin", "Waffle", "Muffin", "Monkey", "Cookie", "Taco"
         ];
-        this.activeRooms = new Set();
+        this.Rooms = new Map();
     }
 
     generateRoomCode() {
-        let roomName = "";
+        let roomCode = "";
         do {
             const adjectiveIndex = Math.floor(Math.random() * this.adjectives.length);
             const nounIndex = Math.floor(Math.random() * this.nouns.length);
-            roomName = this.adjectives[adjectiveIndex] + this.nouns[nounIndex];
-        } while (this.activeRooms.has(roomName));
+            roomCode = this.adjectives[adjectiveIndex] + this.nouns[nounIndex];
+        }while(this.Rooms.has(roomCode)); 
 
-        this.activeRooms.add(roomName);
-        console.log(roomName);
-        console.log(this.activeRooms.size);
-        return roomName;
+        return roomCode;
+    }
+    createRoom(player1){
+        const roomCode = this.generateRoomCode();
+        const room = new Room(roomCode,player1);
+        this.Rooms.set(roomCode,room);
+        console.log(`Player ${player1} joined room: ${roomCode}`);
+        return room;
+    }
+    joinRoom(roomCode, player2) {
+        const room = this.Rooms.get(roomCode);
+        if (!room) {
+            return null;  
+        }
+        if (room.activePlayers === 2) {
+            return null;  
+        }
+        room.addPlayer(player2);
+        console.log(`Player ${player2} joined room: ${roomCode}`);
+        return room;  
+    }
+    getRoom(roomCode){
+        return this.Rooms.get(roomCode);
     }
 }
 

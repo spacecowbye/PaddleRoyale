@@ -1,26 +1,34 @@
+// global error modal manipulation
+function showError(message) {
+    document.getElementById("roomCodeModal").style.display = "none";
+    document.getElementById("errorMessage").innerText = message;
+    document.getElementById("errorModal").style.display = "flex";
+  }
+  
+  function closeErrorModal() {
+    document.getElementById("errorModal").style.display = "none";
+  }
+  
+document.getElementById("errorModal").addEventListener("click", function (event) {
+    if (event.target === this) {
+        closeErrorModal();
+    }
+});
+  
+
 
 // Play button - Create new room
 document.querySelector('.play').addEventListener('click', async () => {
     console.log("Play button clicked");
+
     try {
-        console.log("Sending create-room request");
-        const response = await axios.post("http://localhost:8080/create-room", {
-            playerName: "Player1",
-            time: Date.now(),
-        });
-        console.log("Room Created Successfully:", response.data);
-        const roomCode = response.data.roomCode;
+        const response = await axios.post("http://localhost:8080/create-room");
         
-        if (roomCode) {
-            console.log("Redirecting to game.html with room code:", roomCode);
-            window.location.href = `game.html?room=${roomCode}`;
-        } else {
-            console.error("No room code received in response");
-            alert("Error creating room: No room code received");
-        }
+        const {roomCode} = response.data
+        window.location.href = `http://localhost:8080/game.html?room=${roomCode}`;
+       
     } catch (error) {
-        console.error("Error creating room:", error);
-        alert("Error creating room: " + (error.response?.data?.message || error.message));
+        showError("No response from Server, please try later");
     }
 });
 
@@ -30,6 +38,7 @@ const joinBtn = document.querySelector(".learn");
 const closeBtn = document.getElementsByClassName("close")[0];
 const submitButton = document.getElementById("submitRoomCode");
 const roomCodeInput = document.getElementById("roomCodeInput");
+const errorBtn = document.getElementById('errorBtn');
 
 // Open modal when "Enter Room Code" button is clicked
 joinBtn.onclick = function() {
@@ -53,12 +62,14 @@ window.onclick = function(event) {
 };
 
 // Handle Enter key in input field
-roomCodeInput.addEventListener("keydown", function(event) {
+roomCodeInput.addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
         console.log("Enter key pressed in input");
         submitButton.click();
     }
 });
+
+
 
 // Submit room code
 submitButton.addEventListener('click', async() => {
@@ -66,25 +77,25 @@ submitButton.addEventListener('click', async() => {
     const roomCode = roomCodeInput.value.trim();
     
     if (!roomCode) {
-        alert("Please enter a valid room code.");
+        showError("Room Code Cannot be empty");
         return;
     }
     
     try {
         console.log("Sending join-room request with code:", roomCode);
         const response = await axios.post("http://localhost:8080/join-room", { roomCode });
-        console.log("Join room response:", response.data);
-        
-        // First hide the modal, then redirect
-        modal.style.display = "none";
-        
-        // Use setTimeout to ensure the modal is hidden before redirecting
-        setTimeout(() => {
-            console.log("Redirecting to game with room code:", roomCode);
-            window.location.href = `game.html?room=${roomCode}`;
-        }, 100);
+        window.location.href = `http://localhost:8080/game.html?room=${roomCode}`;
+
+      
     } catch (error) {
-        console.error("Error joining room:", error);
-        alert("Failed to join room. Please check the room code and try again.");
+        if(error.response){
+            showError("Invalid Room Code");
+        }
+        else if(error.request){
+             showError("No response from Server, please try later");
+        }
+        else{
+            showError("Request failed, please try later");
+        }
     }
 });
