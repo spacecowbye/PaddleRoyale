@@ -24,10 +24,10 @@
                 Simple, addictive, and competitive. Challenge your friends to show them you are the best.
             </p>
             <div class="buttons">
-                <button class="play" onclick="window.open('game.html', '_blank')">
+                <button class="play">
                     Play Now
                 </button>
-                <button class="learn">Learn More</button>
+                <button class="learn">Enter Room Code</code></button>
             </div>
         </div>
         
@@ -60,6 +60,12 @@
     <!-- JavaScript -->
     <script>
         // Simple animation for the Learn More button
+        document.querySelector('.play').addEventListener('click',async () => {
+            const response = await fetch('/create-room');
+            const data = await response.json();
+            window.location.href = `game.html?room=${data.roomCode}`;
+            
+        })
         document.querySelector('.learn').addEventListener('click', function() {
             alert('More information about Paddle Royale coming soon!');
         });
