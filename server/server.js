@@ -4,7 +4,7 @@ const {Server} = require('socket.io');
 const dotenv = require('dotenv');
 const path = require('path');
 const cors = require('cors');
-const { generateRoomCode } = require("./roomManager");  // Import function
+const RoomManager = require('./RoomManager');
 
 
 dotenv.config();
@@ -12,22 +12,40 @@ const app = express();
 const server = createServer(app);
 const PORT = process.env.PORT || 8080;
 const io = new Server(server);
+const roomManager = new RoomManager();
+const lobbyNamespace = io.of("/lobby");
 
 
+app.use(express.json());
 app.use(express.static(path.join(__dirname,"../public")));
 app.use(cors());
 
-app.get('/create-room',(req,res) =>{
-    const roomCode = generateRoomCode();
-    const object = {roomCode : roomCode};
-    res.send(object);
+app.post('/create-room', (req, res) => {
+    console.log(req.body);
+    const roomCode = roomManager.generateRoomCode(); 
+    res.json({ roomCode });
+    roomManager.activeRooms.add(roomCode);
+    
+});
+
+app.post('/join-room', (req, res) => {
+    const { roomCode } = req.body;
+    // Validate room code exists
+    // Send appropriate response
+    if(roomManager.activeRooms.has(roomCode)){
+        res.status(200).json({isActve : true});
+    }
+    else{
+        res.status(400).json({isActive : false});
+        
+    }
+    
+});
+
+lobbyNamespace.on("connection",(socket)=>{
+    console.log(socket.id);
 })
 
-io.on('connection',(socket) => {
-    console.log("A new user connected");
-})
-
-  
 server.listen(PORT,()=>{
     console.log(`Server Started on Port ${PORT}`);
 })

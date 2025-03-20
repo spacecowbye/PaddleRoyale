@@ -47,7 +47,7 @@ function drawStartScreen() {
   c.font = "30px Inter";
   c.fillStyle = "#7fff7f";
   c.textAlign = "center";
-  c.fillText("Press SPACE to start", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
+  c.fillText("Waiting for Player 2", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
 
   c.font = "16px Inter";
   c.fillText(
@@ -228,7 +228,7 @@ function animate() {
   if (!gameStarted) {
     drawStartScreen();
   }
-  createPowerUps();
+  
 }
 
 // Event listeners

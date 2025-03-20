@@ -1,32 +1,30 @@
-let adjectives = [
-    "Big", "Tiny", "Smelly", "Angry", "Sleepy", "Wobbly", 
-    "Jolly", "Grumpy", "Lazy", "Funky", "Tired", "Smart"
-];
-
-let nouns  = [
-    "Fart", "Pickle", "Sandwich", "Jelly", "Banana", "Donut", 
-    "Penguin", "Waffle", "Muffin", "Monkey", "Cookie", "Taco"
-];
-
-let roomNameSet = new Set();
-
-function generateRoomCode(){
-
-    let roomName = "";
-    do{
-    let adjectiveIndex = Math.floor(Math.random()*(adjectives.length))
-    let nounIndex = Math.floor(Math.random()*(adjectives.length));
-    roomName = adjectives[adjectiveIndex] + nouns[nounIndex];
-
+// RoomManager.js
+class RoomManager {
+    constructor() {
+        this.adjectives = [
+            "Big", "Tiny", "Smelly", "Angry", "Sleepy", "Wobbly",
+            "Jolly", "Grumpy", "Lazy", "Funky", "Tired", "Smart"
+        ];
+        this.nouns = [
+            "Fart", "Pickle", "Sandwich", "Jelly", "Banana", "Donut",
+            "Penguin", "Waffle", "Muffin", "Monkey", "Cookie", "Taco"
+        ];
+        this.activeRooms = new Set();
     }
-    while(roomNameSet.has(roomName));
-    
-    roomNameSet.add(roomName);
-    console.log(roomName);
-    console.log(roomNameSet.size);
-    return roomName;
+
+    generateRoomCode() {
+        let roomName = "";
+        do {
+            const adjectiveIndex = Math.floor(Math.random() * this.adjectives.length);
+            const nounIndex = Math.floor(Math.random() * this.nouns.length);
+            roomName = this.adjectives[adjectiveIndex] + this.nouns[nounIndex];
+        } while (this.activeRooms.has(roomName));
+
+        this.activeRooms.add(roomName);
+        console.log(roomName);
+        console.log(this.activeRooms.size);
+        return roomName;
+    }
 }
 
-    
-
-module.exports = { generateRoomCode };
+module.exports = RoomManager;

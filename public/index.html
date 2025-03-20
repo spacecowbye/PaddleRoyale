@@ -1,74 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+  <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Paddle Royale</title>
     <link rel="stylesheet" href="styles.css" />
-</head>
-<body>
+  </head>
+  <body>
     <!-- Navigation -->
     <nav>
-        <a href="#">Home</a>
+      <a href="#">Home</a>
     </nav>
 
     <!-- Main Content -->
     <div class="container">
-        <div class="text-content">
-            <h1>
-                <span class="white">PADDLE</span>
-                <span class="green">Royale</span>
-            </h1>
-            <p>
-                Experience the nostalgia of the original arcade classic, with modern powerups.
-                Simple, addictive, and competitive. Challenge your friends to show them you are the best.
-            </p>
-            <div class="buttons">
-                <button class="play">
-                    Play Now
-                </button>
-                <button class="learn">Enter Room Code</code></button>
-            </div>
+      <div class="text-content">
+        <h1>
+          <span class="white">PADDLE</span>
+          <span class="green">Royale</span>
+        </h1>
+        <p>
+          Experience the nostalgia of the original arcade classic, with modern
+          powerups. Simple, addictive, and competitive. Challenge your friends
+          to show them you are the best.
+        </p>
+        <div class="buttons">
+          <button class="play">Play Now</button>
+          <button class="learn">Enter Room Code</button>
         </div>
-        
-        <div class="game-preview">
-            <!-- Game visual elements -->
-            <div class="left-paddle"></div>
-            <div class="right-paddle"></div>
-            <div class="ball"></div>
-            <span class="score">0 : 0</span>
-            <div class="scanlines"></div>
-            
-            <!-- Preview overlay -->
-            <div class="preview-overlay">
-                <div class="play-icon"></div>
-            </div>
-            <div class="preview-label">PREVIEW</div>
+      </div>
+
+      <div class="game-preview">
+        <!-- Game visual elements -->
+        <div class="left-paddle"></div>
+        <div class="right-paddle"></div>
+        <div class="ball"></div>
+        <span class="score">0 : 0</span>
+        <div class="scanlines"></div>
+
+        <!-- Preview overlay -->
+        <div class="preview-overlay">
+          <div class="play-icon"></div>
         </div>
+        <div class="preview-label">PREVIEW</div>
+      </div>
+    </div>
+
+    <!-- Room Code Modal -->
+    <div id="roomCodeModal" class="modal">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Enter Room Code</h2>
+        <input type="text" id="roomCodeInput" placeholder="Room Code" />
+        <button id="submitRoomCode">Submit</button>
+      </div>
     </div>
 
     <!-- Footer -->
     <footer>
-        <div>© 2025 Paddle Royale. All rights reserved.</div>
-        <div class="social-links">
-            <a href="#">Twitter</a>
-            <a href="#">Discord</a>
-            <a href="#">GitHub</a>
-        </div>
+      <div>© 2025 Paddle Royale. All rights reserved.</div>
+      <div class="social-links">
+        <a href="#">Twitter</a>
+        <a href="#">Discord</a>
+        <a href="#">GitHub</a>
+      </div>
     </footer>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="index.js"></script>
 
-    <!-- JavaScript -->
-    <script>
-        // Simple animation for the Learn More button
-        document.querySelector('.play').addEventListener('click',async () => {
-            const response = await fetch('/create-room');
-            const data = await response.json();
-            window.location.href = `game.html?room=${data.roomCode}`;
-            
-        })
-        document.querySelector('.learn').addEventListener('click', function() {
-            alert('More information about Paddle Royale coming soon!');
-        });
-    </script>
-</body>
+  </body>
 </html>

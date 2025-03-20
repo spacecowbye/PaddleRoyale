@@ -44,7 +44,7 @@ nav {
     width: 100%;
     padding: 50px;
     display: flex;
-    justify-content:flex-start;
+    justify-content: flex-start;
 }
 
 nav a {
@@ -346,26 +346,11 @@ footer {
     pointer-events: none;
     opacity: 0.3;
 }
-/* Button Styling */
-.create-room, .join-room {
-    font-size: 16px;
-    padding: 14px 24px;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    font-weight: bold;
-    transition: all 0.3s ease;
-    background: linear-gradient(135deg, #7fff7f 0%, #5adb5a 100%);
-    color: #052505;
-    box-shadow: 0 4px 15px rgba(127, 255, 127, 0.3);
-}
-
-.create-room:hover, .join-room:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(127, 255, 127, 0.4);
-}
 
 /* Modal Styling */
+#roomCodeModal{
+    display: none;
+}
 .modal {
     display: none;
     position: fixed;
