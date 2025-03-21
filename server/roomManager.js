@@ -11,7 +11,7 @@ class RoomManager {
             "Penguin", "Waffle", "Muffin", "Monkey", "Cookie", "Taco"
         ];
         this.Rooms = new Map();
-    }
+    }   
 
     generateRoomCode() {
         let roomCode = "";
@@ -23,14 +23,14 @@ class RoomManager {
 
         return roomCode;
     }
-    createRoom(player1){
+    createRoom(){
         const roomCode = this.generateRoomCode();
-        const room = new Room(roomCode,player1);
+        const room = new Room(roomCode);
         this.Rooms.set(roomCode,room);
-        console.log(`Player ${player1} joined room: ${roomCode}`);
+        console.log(this.Rooms.keys());
         return room;
     }
-    joinRoom(roomCode, player2) {
+    joinRoom(roomCode, player) {
         const room = this.Rooms.get(roomCode);
         if (!room) {
             return null;  
@@ -38,8 +38,8 @@ class RoomManager {
         if (room.activePlayers === 2) {
             return null;  
         }
-        room.addPlayer(player2);
-        console.log(`Player ${player2} joined room: ${roomCode}`);
+        room.addPlayer(player);
+        console.log(`Player ${player} joined room: ${roomCode}`);
         return room;  
     }
     getRoom(roomCode){

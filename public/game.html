@@ -218,22 +218,27 @@
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
-      async function validateRoom() {
-        try {
+      async function validateRoom(){
+        try{
           const URLparams = new URLSearchParams(window.location.search);
-          const roomCode = URLparams.get("room");
-          const response = await axios.get(
-            `http://localhost:8080/validate-room/${roomCode}`
-          );
-          const { valid } = response.data;
-          if (!valid) {
-            alert("Invalid Room, redirecting to Home..");
-            window.location.href = `http://localhost:8080/index.html`;
-          }
-        } catch (error) {
-          
-          window.location.href = `http://localhost:8080/index.html`;
+          const roomCode = URLparams.get('room');
+          const response = await axios.post(`http://localhost:8080/join-room/${roomCode}`);
+          console.log(response.data); // Log response for debugging
+
+
         }
+        catch(err){
+            if(err.response && err.response.data && err.response.data.error){
+              window.alert( err.response.data.error);
+            }
+            else{
+              window.alert("Something Bad Happpened");
+            }
+            
+            window.location.href = `http://localhost:8080/`
+        }
+
+        
       }
       validateRoom();
       

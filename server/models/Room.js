@@ -1,24 +1,20 @@
 class Room{
-    constructor(roomCode,player1){
+    constructor(roomCode){
         this.roomCode = roomCode;
-        this.player1 = player1;
-        this.player2 = null;
+        this.players = [];
         this.gameStatus = "Waiting";
         this.maxPlayers = 2;
-        this.activePlayers = 1;
+        this.activePlayers = 0;
         this.createdAt = new Date().toISOString();
 
  
     }
 
-    addPlayer(player2){
-        if(this.player2){
-                return {error : "Room already has 2 players"};
-            }
+    addPlayer(player){
         
-        this.player2 = player2;
-        this.gameStatus = "Ready";
-        this.activePlayers = 2;
+        this.players.push(player);
+        this.gameStatus = this.players.length > 1 ? 'Ready' : 'Waiting';
+        this.activePlayers = this.players.length;
         return this;
         
         }

@@ -30,55 +30,30 @@ app.use(express.static(path.join(__dirname, "../public")));
 app.use(cors());
 
 app.post("/create-room", (req, res) => {
-  const player1 = uuidv4();
-  const room = roomManager.createRoom(player1);
-
-  room.status = "Success";
+  const room = roomManager.createRoom();
   res.status(201).json(room);
 });
 
-app.post("/join-room", (req, res) => {
-  const player2 = uuidv4();
-  const { roomCode } = req.body;
-  const room = roomManager.joinRoom(roomCode,player2);
-  console.log(room);
-  if(room){
-    room.status = "Success"
-    res.status(201).json(room);
+app.post("/join-room/:roomCode", (req, res) => {
+  const player = uuidv4();
+  const { roomCode } = req.params;
+  const room = roomManager.Rooms.get(roomCode);
+  
+  if (!room) {
+    return res.status(400).json({ error: "No such Room" });
   }
-  else{
-    res.status(400).json({
-        error : "No such Room"
-    })
+  if (room.activePlayers === room.maxPlayers) {
+    return res.status(403).json({ error: "Room is full" });
+  }
+  const updatedRoom = roomManager.joinRoom(roomCode, player);
+
+  if (!updatedRoom) {
+    return res.status(500).json({ error: "Failed to join room" });
   }
 
+  console.log(updatedRoom);
+  res.status(201).json(updatedRoom);
 });
-
-app.get("/validate-room/:roomCode",(req,res) => {
-    const {roomCode} = req.params;
-
-    const room = roomManager.getRoom(roomCode);
-    if(!room){
-        return res.status(400).json({
-            valid : false,
-            error : "Room Does not exist"
-        })
-    }
-    else if(room.activePlayers >= 2){
-        return res.status(400).json({
-            valid : false,
-            error : "Room Does not exist"
-        })
-    }
-    else{
-        return res.status(200).json(
-            {valid : true}
-        );
-    }
-}
-   
-    
-)
 
 
 server.listen(PORT, () => {

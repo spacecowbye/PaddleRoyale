@@ -23,8 +23,7 @@ document.querySelector('.play').addEventListener('click', async () => {
 
     try {
         const response = await axios.post("http://localhost:8080/create-room");
-        
-        const {roomCode} = response.data
+        const {roomCode} = response.data;        
         window.location.href = `http://localhost:8080/game.html?room=${roomCode}`;
        
     } catch (error) {
@@ -83,7 +82,6 @@ submitButton.addEventListener('click', async() => {
     
     try {
         console.log("Sending join-room request with code:", roomCode);
-        const response = await axios.post("http://localhost:8080/join-room", { roomCode });
         window.location.href = `http://localhost:8080/game.html?room=${roomCode}`;
 
       
