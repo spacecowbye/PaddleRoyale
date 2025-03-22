@@ -36,7 +36,6 @@ app.post("/create-room", (req, res) => {
 
 app.post("/join-room/:roomCode", (req, res) => {
   const {socketId} = req.body
-  console.log(socketId);
   const player = socketId;
   const { roomCode } = req.params;
   const room = roomManager.Rooms.get(roomCode);

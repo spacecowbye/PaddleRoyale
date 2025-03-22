@@ -15,15 +15,20 @@ class GameSocketManager{
     setupSocketEvents() {
         this.io.on("connection", (socket) => {
             console.log("New socket connection made on ", socket.id);
-    
-            socket.emit("hello", "world");
-    
+            socket.on('joinRoom',(roomCode) => {
+
+                socket.join(roomCode);
+                socket.emit('youJoined', { playerId: socket.id, roomCode });
+                
+            })
+
             // Correctly attach the disconnect listener to the socket instance
             socket.on("disconnect", () => {
                 console.log("Socket disconnected ", socket.id);
             });
         });
     }
+    
     
 }
 

@@ -1,13 +1,31 @@
+
+
 const socket = io(); 
 
 socket.on("connect", async() => {
     console.log(" Connected to WebSocket server:", socket.id);
     let socketId = socket.id;
+    const URLparams = new URLSearchParams(window.location.search);
+    const roomCode = URLparams.get('room');
+    
+    socket.emit('joinRoom',roomCode);
+    socket.on("youJoined",(data)=>{
+        console.log(data);
+    })
+
+
+
     await validateRoom(socketId)
     socket.on("disconnect", () => {
         console.log(" Disconnected from WebSocket server");
     });
+
+    
+    
 });
+
+
+
 
 
 async function validateRoom(socketId){
@@ -16,7 +34,7 @@ async function validateRoom(socketId){
       const URLparams = new URLSearchParams(window.location.search);
       const roomCode = URLparams.get('room');
       const response = await axios.post(`http://localhost:8080/join-room/${roomCode}`,{socketId});
-      
+      console.log(response.data);
 
 
     }
