@@ -7,7 +7,7 @@ const cors = require("cors");
 const { v4: uuidv4 } = require("uuid");
 
 
-const RoomManager = require("./roomManager");
+const roomManager = require("./roomManager");
 const GameSocketManager = require("./config/socket");
 
 
@@ -18,7 +18,6 @@ dotenv.config();
 const app = express();
 const server = createServer(app);
 const PORT = process.env.PORT || 8080;
-const roomManager = new RoomManager();
 const gameSocketManager = new GameSocketManager(server);
 
 

@@ -2,6 +2,7 @@
 const Room = require("./models/Room");
 class RoomManager {
     constructor() {
+        if(!RoomManager.instance){
         this.adjectives = [
             "Big", "Tiny", "Smelly", "Angry", "Sleepy", "Wobbly",
             "Jolly", "Grumpy", "Lazy", "Funky", "Tired", "Smart"
@@ -11,10 +12,14 @@ class RoomManager {
             "Penguin", "Waffle", "Muffin", "Monkey", "Cookie", "Taco"
         ];
         this.Rooms = new Map();
+        RoomManager.instance = this;
+        }
+        
+        return RoomManager.instance;  
     }   
 
     generateRoomCode() {
-        let roomCode = "";
+        let roomCode = "";  
         do {
             const adjectiveIndex = Math.floor(Math.random() * this.adjectives.length);
             const nounIndex = Math.floor(Math.random() * this.nouns.length);
@@ -45,6 +50,11 @@ class RoomManager {
     getRoom(roomCode){
         return this.Rooms.get(roomCode);
     }
+    deleteRoom(roomCode){
+        this.Rooms.delete(roomCode);
+        console.log(`${roomCode} has been deleted`);
+        console.log(this.Rooms);
+    }
 }
 
-module.exports = RoomManager;
+module.exports = new RoomManager();

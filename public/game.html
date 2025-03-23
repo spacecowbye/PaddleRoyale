@@ -190,7 +190,6 @@
       </div>
     </div>
 
-
     <script>
       function copyRoomCode() {
         const roomCode = document.getElementById("roomCode").textContent;
@@ -213,7 +212,23 @@
         const URLparams = new URLSearchParams(window.location.search);
         const roomCode = URLparams.get("room");
         document.querySelector(".room-code").textContent = roomCode;
+        drawMessageToScreenClient();
       });
+      function drawMessageToScreenClient() {
+        const canvas = document.querySelector("#gameCanvas");
+        const CANVAS_WIDTH = 652; 
+        const CANVAS_HEIGHT = 404;
+        const BACKGROUND_COLOR = "rgba(0,0,0,0.7)" 
+        const c = canvas.getContext('2d');
+        c.fillStyle = BACKGROUND_COLOR;
+        c.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        c.font = "30px Inter";
+        c.fillStyle = "#7fff7f";
+        c.textAlign = "center";
+        c.fillText("Waiting for the other Player", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 10);
+        c.fillText("Personally, I am rooting for you",CANVAS_WIDTH/2,CANVAS_HEIGHT/2 + 50);
+      }
+      
     </script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
