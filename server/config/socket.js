@@ -12,13 +12,15 @@ class GameSocketManager {
       },
       transports: ["websocket", "polling"],
     });
-    this.rooms = new Map(); // mapping room to Game Managers
+    this.rooms = new Map(); 
     this.socketToRoom = new Map();
     this.setupSocketEvents();
   }
+
   setupSocketEvents() {
     this.io.on("connection", (socket) => {
       console.log("New socket connection made on ", socket.id);
+
       socket.on("joinRoom", (roomCode) => {
         const room = RoomManager.getRoom(roomCode);
         if (!room) {
@@ -35,31 +37,48 @@ class GameSocketManager {
           this.io.to(roomCode).emit("GameStatus", "Ready");
         }
       });
-      socket.on("GameStart",()=>{
+
+      socket.on("GameStart", () => {
         const roomCode = this.socketToRoom.get(socket.id);
-        if(!roomCode){
-            return ;
+        if (!roomCode) {
+          return;
         }
         const room = RoomManager.getRoom(roomCode);
 
-        let doesGameManagerExist = this.rooms.get(roomCode);
-        if(!doesGameManagerExist){
-            const gameManager = new GameManager(room,this.io);
-            this.rooms.set(roomCode,gameManager);
-            gameManager.setupGameLoop();
+        // Ensure only one game manager per room
+        let gameManager = this.rooms.get(roomCode);
+        if (!gameManager) {
+          gameManager = new GameManager(room, this.io);
+          this.rooms.set(roomCode, gameManager);
+          gameManager.setupGameLoop();
         }
-      })
 
-      socket.on("PADDLE_UP", () => {
-        console.log(`${socket.id} wants the player to go up`);
+        // Paddle movement events outside of GameStart
+        socket.on("PADDLE_UP", () => {
+          let object = {
+            movePaddleUp: true,
+            movePaddleDown: false,
+          };
+          gameManager.updatePaddle(socket.id, object);
+        });
+
+        socket.on("PADDLE_DOWN", () => {
+          let object = {
+            movePaddleUp: false,
+            movePaddleDown: true,
+          };
+          gameManager.updatePaddle(socket.id, object);
+        });
+
+        socket.on("PADDLE_STOP", () => {
+          let object = {
+            movePaddleUp: false,
+            movePaddleDown: false,
+          };
+          gameManager.updatePaddle(socket.id, object);
+        });
       });
-      socket.on("PADDLE_DOWN", () => {
-        console.log(`${socket.id} wants the player to go down`);
-      });
 
-
-
-      // Correctly attach the disconnect listener to the socket instance
       socket.on("disconnect", () => {
         console.log("Socket disconnected ", socket.id);
 

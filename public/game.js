@@ -83,21 +83,21 @@
 //       return;
 //     }
 
-    // if (this.x + this.radius >= CANVAS_WIDTH) {
-    //   let score = document.getElementById("player1Score");
-    //   let actualScore = Number(score.textContent);
-    //   actualScore++;    
-    //   score.textContent = actualScore;
-    //   this.reset();
-    // }
+//     if (this.x + this.radius >= CANVAS_WIDTH) {
+//       let score = document.getElementById("player1Score");
+//       let actualScore = Number(score.textContent);
+//       actualScore++;    
+//       score.textContent = actualScore;
+//       this.reset();
+//     }
 
-    // if (this.x - this.radius <= 0) {
-    //   let score = document.getElementById("player2Score");
-    //   let actualScore = Number(score.textContent);
-    //   actualScore++;
-    //   score.textContent = actualScore;
-    //   this.reset();
-    // }
+//     if (this.x - this.radius <= 0) {
+//       let score = document.getElementById("player2Score");
+//       let actualScore = Number(score.textContent);
+//       actualScore++;
+//       score.textContent = actualScore;
+//       this.reset();
+//     }
 
 //     if (this.y + this.radius >= CANVAS_HEIGHT || this.y - this.radius <= 0) {
 //       this.dy = -this.dy;

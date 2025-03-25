@@ -13,6 +13,10 @@ class Ball {
   getRandomSpeedY() {
     return (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 1.95);
   }
+  getRandomSpeedYAlter() {
+    return (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 3 + 2);
+}
+
   reset(x, y) {
     this.x = x;
     this.y = y;
