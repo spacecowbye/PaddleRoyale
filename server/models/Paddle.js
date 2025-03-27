@@ -5,14 +5,14 @@ class Paddle {
         this.player = player;
         this.dy = 0; // Movement speed (positive = down, negative = up)
         this.width = 15;
-        this.length = 100;
+        this.length = 80;
     }
 
     move(up, down) {
         if (up) {
-            this.dy = -5; // Move up
+            this.dy = -9; // Move up
         } else if (down) {
-            this.dy = 5;  // Move down
+            this.dy = 9;  // Move down
         } else {
             this.dy = 0;  // Stop when no key is pressed
         }
