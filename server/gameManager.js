@@ -249,6 +249,7 @@ class GameManager {
       clearInterval(this.gameLoopInterval);
       this.gameLoopInterval = null;
     }
+  }
 }
 
 module.exports = GameManager;
