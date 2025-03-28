@@ -79,7 +79,9 @@ class GameManager {
       this.gameStarted = true;
       console.log(`setting up interval at tick rate of ${this.TICK_RATE}`);
       
-      this.managePowerUps();
+      setTimeout(() => {
+        this.managePowerUps();
+      }, 2500);
       setInterval(() => {
         if (!this.gamePaused) {
           const gameState = this.updateGame();
@@ -89,38 +91,50 @@ class GameManager {
     }
   }
   managePowerUps() {
-    let powerUpSpawnInterval = Math.floor(Math.random() * (12000 - 8000 + 1)) + 8000; 
-  
-    const spawnNewPowerUp = () => {
-      if (!this.gamePaused) {
-        if (!this.PowerUp) {
-          this.spawnPowerUp();
-        } else {
-          
-          this.PowerUp = null;
-          this.io.to(this.ROOM_CODE).emit("PowerUpDespawn");
-          
-          
-          const nextSpawnDelay = Math.floor(Math.random() * (2000 - 1000 + 1)) + 1000;
-          setTimeout(spawnNewPowerUp, nextSpawnDelay);
-          return;
-        }
-  
-        
-        powerUpSpawnInterval = Math.floor(Math.random() * (12000 - 8000 + 1)) + 8000;
-      }
-  
-      setTimeout(spawnNewPowerUp, powerUpSpawnInterval);
-    };
-  
-    spawnNewPowerUp(); // Start managing the power-ups
-  }
+   //
+   if(!this.PowerUp){
+    this.spawnPowerUp();
+    
+    setInterval(() => {
+      if(this.PowerUp){
+        // it wasnt collected
+        this.PowerUp = null;
+        const delayBeforeSpawn = Math.floor(Math.random()*(3000-1000 +1)+1500);
 
+        setTimeout(() =>{
+          console.log("PowerUp wasnt collected and exhaused its lifetime of 12s");
+          this.spawnPowerUp();
+          
+        },delayBeforeSpawn)
+      }
+      else{ 
+        //it was collected
+        //create new
+        this.spawnPowerUp();
+
+      }
+      
+    },15*1000);
+   }
+  }
   spawnPowerUp() {
     this.PowerUp = new PowerUp();
     console.log(this.PowerUp);
   }
   updateBall() {
+    //POWERUP LOGIC
+    if(this.PowerUp && this.lastHitBy !== null){
+    if (
+      this.ball.x + this.ball.radius >= this.PowerUp.x &&  // Ball's right edge past PowerUp's left edge
+      this.ball.x - this.ball.radius <= this.PowerUp.x + this.PowerUp.width &&  // Ball's left edge before PowerUp's right edge
+      this.ball.y + this.ball.radius >= this.PowerUp.y &&  // Ball's bottom edge past PowerUp's top edge
+      this.ball.y - this.ball.radius <= this.PowerUp.y + this.PowerUp.height  // Ball's top edge before PowerUp's bottom edge
+    ){
+      console.log("POWERUP HIT");
+    }
+  }
+
+
     // Scoring logic
     if (this.ball.x + this.ball.radius >= this.CANVAS_WIDTH) {
       this.updateScore(this.player1);
@@ -139,7 +153,7 @@ class GameManager {
       this.ball.y = this.ball.radius;
       this.ball.dy = -this.ball.dy;
     }
-
+    
     // Right paddle collision
     if (
       this.ball.x + this.ball.radius >= this.rightPaddle.x &&
@@ -149,6 +163,7 @@ class GameManager {
       this.ball.y - this.ball.radius <=
         this.rightPaddle.y + this.rightPaddle.length
     ) {
+      this.ball.lastHitBy = this.player2;
       const hitPosition = this.ball.y - this.rightPaddle.y;
       const segmentSize = this.rightPaddle.length / 6;
       const segment = Math.floor(hitPosition / segmentSize);
@@ -174,6 +189,7 @@ class GameManager {
       this.ball.y - this.ball.radius <=
         this.leftPaddle.y + this.leftPaddle.length
     ) {
+      this.ball.lastHitBy = this.player1;
       const hitPosition = this.ball.y - this.leftPaddle.y;
       const segmentSize = this.leftPaddle.length / 6;
       const segment = Math.floor(hitPosition / segmentSize);

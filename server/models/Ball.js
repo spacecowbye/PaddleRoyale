@@ -6,6 +6,7 @@ class Ball {
     this.radius = 10;
     this.dx = this.getRandomSpeedX();
     this.dy = this.getRandomSpeedY();
+    this.lastHitBy = null;
   }
   getRandomSpeedX() {
     return (Math.random() > 0.5 ? 1 : -1) * (4 + Math.random() * 4);
@@ -22,6 +23,7 @@ class Ball {
     this.y = y;
     this.dx = this.getRandomSpeedX();
     this.dy = this.getRandomSpeedY();
+    this.lastHitBy = null;
   }
   update(){
     console.log("update has been called");

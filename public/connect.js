@@ -183,12 +183,12 @@ function createDashedLine() {
 }
 document.addEventListener("keydown", (event) => {
   if (event.key === "w" || event.key === "W" || event.key === "ArrowUp") {
-    console.log("EMMITING PADDLE UP");
+    
     socket.emit("PADDLE_UP");
   }
   if (event.key === "s" || event.key === "S" || event.key === "ArrowDown") {
     socket.emit("PADDLE_DOWN");
-    console.log("EMMITING PADDLE DOWN");
+    
   }
 });
 document.addEventListener("keyup", (event) => {
@@ -201,6 +201,6 @@ document.addEventListener("keyup", (event) => {
     event.key === "ArrowDown"
   ) {
     socket.emit("PADDLE_STOP");
-    console.log("Emmiting paddle stop");
+    
   }
 });
