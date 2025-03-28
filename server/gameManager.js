@@ -123,8 +123,11 @@ class GameManager {
   }
   updateBall() {
     //POWERUP LOGIC
-    if(this.PowerUp && this.lastHitBy !== null){
+    
     if (
+      this.ball &&
+      this.PowerUp &&
+      this.ball.lastHitBy !== null &&
       this.ball.x + this.ball.radius >= this.PowerUp.x &&  // Ball's right edge past PowerUp's left edge
       this.ball.x - this.ball.radius <= this.PowerUp.x + this.PowerUp.width &&  // Ball's left edge before PowerUp's right edge
       this.ball.y + this.ball.radius >= this.PowerUp.y &&  // Ball's bottom edge past PowerUp's top edge
@@ -132,7 +135,7 @@ class GameManager {
     ){
       console.log("POWERUP HIT");
     }
-  }
+  
 
 
     // Scoring logic
