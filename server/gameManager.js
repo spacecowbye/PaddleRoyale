@@ -44,6 +44,10 @@ class GameManager {
       this.player2
     );
     this.PowerUp = null;
+
+    this.gameLoopInterval = null;
+    this.powerUpTimeout = null;
+    this.powerUpInterval = null;
   }
   updateScore(player) {
     this.gamePaused = true;
@@ -77,12 +81,13 @@ class GameManager {
   setupGameLoop() {
     if (!this.gameStarted) {
       this.gameStarted = true;
-      console.log(`setting up interval at tick rate of ${this.TICK_RATE}`);
-      
-      setTimeout(() => {
+      console.log(`Setting up interval at tick rate of ${this.TICK_RATE}`);
+
+      this.powerUpTimeout = setTimeout(() => {
         this.managePowerUps();
       }, 2500);
-      setInterval(() => {
+
+      this.gameLoopInterval = setInterval(() => {
         if (!this.gamePaused) {
           const gameState = this.updateGame();
           this.io.to(this.ROOM_CODE).emit("GameUpdate", gameState);
@@ -90,32 +95,22 @@ class GameManager {
       }, this.TICK_RATE);
     }
   }
+
   managePowerUps() {
-   //
-   if(!this.PowerUp){
-    this.spawnPowerUp();
-    
-    setInterval(() => {
-      if(this.PowerUp){
-        // it wasnt collected
-        this.PowerUp = null;
-        const delayBeforeSpawn = Math.floor(Math.random()*(3000-1000 +1)+1500);
-
-        setTimeout(() =>{
-          console.log("PowerUp wasnt collected and exhaused its lifetime of 12s");
+    if (!this.PowerUp) {
+      this.spawnPowerUp();
+      this.powerUpInterval = setInterval(() => {
+        if (this.PowerUp) {
+          console.log("PowerUp wasn't collected and exhausted its lifetime.");
+          this.PowerUp = null;
+          setTimeout(() => {
+            this.spawnPowerUp();
+          }, Math.random() * (3000 - 1000) + 1500);
+        } else {
           this.spawnPowerUp();
-          
-        },delayBeforeSpawn)
-      }
-      else{ 
-        //it was collected
-        //create new
-        this.spawnPowerUp();
-
-      }
-      
-    },15*1000);
-   }
+        }
+      }, 15 * 1000);
+    }
   }
   spawnPowerUp() {
     this.PowerUp = new PowerUp();
@@ -234,6 +229,26 @@ class GameManager {
     };
     return GameState;
   }
+  destroy() {
+    console.log(`Destroying GameManager for room: ${this.ROOM_CODE}`);
+
+    // Clear power-up interval
+    if (this.powerUpInterval) {
+      clearInterval(this.powerUpInterval);
+      this.powerUpInterval = null;
+    }
+
+    // Clear power-up timeout
+    if (this.powerUpTimeout) {
+      clearTimeout(this.powerUpTimeout);
+      this.powerUpTimeout = null;
+    }
+
+    // Clear game loop interval
+    if (this.gameLoopInterval) {
+      clearInterval(this.gameLoopInterval);
+      this.gameLoopInterval = null;
+    }
 }
 
 module.exports = GameManager;
