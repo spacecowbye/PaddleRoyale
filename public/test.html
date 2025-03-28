@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Paddle Royale</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap");
+
+      body {
+        margin: 0;
+        background-color: #000;
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        font-family: "Inter", sans-serif;
+      }
+
+      /* Navbar Styling */
+      .navbar {
+        width: 100%;
+        background: #111;
+        padding: 10px 0;
+        text-align: center;
+        position: absolute;
+        top: 0;
+      }
+
+      .navbar a {
+        color: #7fff7f;
+        text-decoration: none;
+        font-size: 18px;
+        font-weight: bold;
+        padding: 10px 20px;
+        transition: 0.3s;
+      }
+
+      .navbar a:hover {
+        color: #fff;
+      }
+
+      .back-button {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        background: #7fff7f;
+        border: none;
+        padding: 10px 15px;
+        font-size: 16px;
+        cursor: pointer;
+        font-weight: bold;
+        border-radius: 5px;
+      }
+
+      .game-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-top: 60px;
+      }
+
+      .scoreboard {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        max-width: 600px;
+        margin-bottom: 20px;
+        position: relative;
+      }
+
+      .score {
+        font-size: 48px;
+        font-weight: bold;
+        color: #7fff7f;
+        text-shadow: 0 0 10px rgba(127, 255, 127, 0.7);
+        width: 80px;
+        text-align: center;
+      }
+
+      .score-divider {
+        margin: 0 30px;
+        font-size: 36px;
+        color: #fff;
+        position: relative;
+      }
+
+      .score-divider::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 20px;
+        height: 20px;
+        background-color: #7fff7f;
+        border-radius: 50%;
+        box-shadow: 0 0 15px #7fff7f;
+        animation: pulse 1.5s infinite;
+      }
+
+      @keyframes pulse {
+        0% {
+          opacity: 0.5;
+        }
+        50% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0.5;
+        }
+      }
+
+      canvas {
+        background-color: #222831;
+        border: 2px solid #7fff7f;
+        margin: 0;
+      }
+
+      /* Room Code Styling */
+      .room-code-container {
+        margin-top: 20px;
+        text-align: center;
+        background-color: rgba(34, 40, 49, 0.8);
+        padding: 12px 24px;
+        border-radius: 8px;
+        border: 2px solid #7fff7f;
+        box-shadow: 0 0 15px rgba(127, 255, 127, 0.4);
+      }
+
+      .room-code-label {
+        font-size: 16px;
+        color: #fff;
+        margin-bottom: 5px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .room-code {
+        font-size: 28px;
+        font-weight: bold;
+        color: #7fff7f;
+        text-shadow: 0 0 8px rgba(127, 255, 127, 0.6);
+        letter-spacing: 3px;
+      }
+
+      .copy-button {
+        background: #7fff7f;
+        color: #000;
+        border: none;
+        padding: 6px 12px;
+        margin-top: 8px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: all 0.2s ease;
+      }
+
+      .copy-button:hover {
+        background: #fff;
+        transform: scale(1.05);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="navbar">
+      <a href="index.html">🏠 Home</a>
+    </div>
+
+    <button class="back-button" onclick="window.location.href='index.html'">
+      ← Back
+    </button>
+
+    <div class="game-container">
+      <div class="scoreboard">
+        <div class="score" id="player1Score">0</div>
+        <div class="score-divider">|</div>
+        <div class="score" id="player2Score">0</div>
+      </div>
+
+      <canvas id="gameCanvas"></canvas>
+
+      <div class="room-code-container">
+        <div class="room-code-label">Room Code</div>
+        <div class="room-code" id="roomCode">XG74P9</div>
+        <button class="copy-button" onclick="copyRoomCode()">Copy Code</button>
+      </div>
+    </div>
+
+    <script>
+      function copyRoomCode() {
+        const roomCode = document.getElementById("roomCode").textContent;
+        navigator.clipboard
+          .writeText(roomCode)
+          .then(() => {
+            const copyButton = document.querySelector(".copy-button");
+            const originalText = copyButton.textContent;
+            copyButton.textContent = "Copied!";
+            setTimeout(() => {
+              copyButton.textContent = originalText;
+            }, 1500);
+          })
+          .catch((err) => {
+            console.error("Failed to copy: ", err);
+          });
+      }
+      // Set a random room code when the page loads
+      window.addEventListener("DOMContentLoaded", () => {
+        const URLparams = new URLSearchParams(window.location.search);
+        const roomCode = URLparams.get("room");
+        document.querySelector(".room-code").textContent = roomCode;
+        drawMessageToScreenClient();
+      });
+      function drawMessageToScreenClient() {
+        const canvas = document.querySelector("#gameCanvas");
+        const CANVAS_WIDTH = 652; 
+        const CANVAS_HEIGHT = 404;
+        const BACKGROUND_COLOR = "rgba(0,0,0,0.7)" 
+        const c = canvas.getContext('2d');
+        c.fillStyle = BACKGROUND_COLOR;
+        c.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        c.font = "30px Inter";
+        c.fillStyle = "#7fff7f";
+        c.textAlign = "center";
+        c.fillText("Waiting for the other Player", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 10);
+        c.fillText("Personally, I am rooting for you",CANVAS_WIDTH/2,CANVAS_HEIGHT/2 + 50);
+      }
+      
+    </script>
+    <!-- <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="game.js"></script>
+    <script src="connect.js"></script> -->
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+canvas.width = 652;
+canvas.height = 404;
+
+const powerUps = [];
+
+function getRandomPosition(size) {
+    let x, y;
+    do {
+        x = Math.random() * (canvas.width - size);
+        y = Math.random() * (canvas.height - size);
+    } while (x > canvas.width / 2 - 50 && x < canvas.width / 2 + 50); // Avoid center line
+    return { x, y };
+}
+
+function spawnRandomPowerUps(count) {
+    for (let i = 0; i < count; i++) {
+        const size = 30;
+        const { x, y } = getRandomPosition(size);
+        powerUps.push({ x, y, size });
+    }
+}
+
+function drawPowerUps() {
+    powerUps.forEach((powerUp) => {
+        const outerSize = powerUp.size * 0.8; // Scale down outer rectangle
+        const outerX = powerUp.x + (powerUp.size - outerSize) / 2;
+        const outerY = powerUp.y + (powerUp.size - outerSize) / 2;
+
+        // Outer glowing cyan rectangle
+        ctx.fillStyle = "#00E5FF";
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = "#00E5FF";
+        ctx.fillRect(outerX, outerY, outerSize, outerSize);
+
+        // Inner white rectangle (even smaller)
+        const innerSize = outerSize * 0.5; // 50% of outer size
+        const innerX = outerX + (outerSize - innerSize) / 2;
+        const innerY = outerY + (outerSize - innerSize) / 2;
+        
+        ctx.fillStyle = "white";
+        ctx.shadowBlur = 0; // No glow for inner rectangle
+        ctx.fillRect(innerX, innerY, innerSize, innerSize);
+    });
+}
+
+
+function drawGame() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawPowerUps();
+}
+
+// Spawn 3-5 random power-ups when the game starts
+spawnRandomPowerUps(Math.floor(Math.random() * 3) + 3);
+drawGame();
+
+    </script>
+  </body>
+</html>

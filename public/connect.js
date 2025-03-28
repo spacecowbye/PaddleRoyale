@@ -93,7 +93,7 @@ function startGameLoop(GameState) {
   createDashedLine();
 
   // Draw the ball only if valid
-  const { Ball, Paddle1, Paddle2 } = GameState;
+  const { Ball, Paddle1, Paddle2, PowerUp} = GameState;
   if (
     Ball &&
     Ball.x !== undefined &&
@@ -117,10 +117,34 @@ function startGameLoop(GameState) {
   if (opponentPaddle) {
     drawPaddle(opponentPaddle, false);
   }
+  if(PowerUp){
+    drawPowerUp(PowerUp);
+  }
 }
 function drawPaddle(Paddle) {
   c.fillStyle = PADDLE_COLOR;
   c.fillRect(Paddle.x, Paddle.y, Paddle.width, Paddle.length);
+}
+function drawPowerUp(powerUp) {
+  if (!powerUp) return; 
+
+  const size = powerUp.width; // Fixed size (24x24)
+  const x = powerUp.x;
+  const y = powerUp.y;
+
+  // Outer glowing cyan rectangle
+  c.fillStyle = "#00E5FF";
+  c.shadowBlur = 10;
+  c.shadowColor = "#00E5FF";
+  c.fillRect(x, y, size, size)
+  // Inner white rectangle (smaller for effect)
+  const innerSize = size * 0.5; 
+  const innerX = x + (size - innerSize) / 2;
+  const innerY = y + (size - innerSize) / 2;
+
+  c.fillStyle = "white";
+  c.shadowBlur = 0;   
+  c.fillRect(innerX, innerY, innerSize, innerSize);
 }
 function drawBall(Ball) {
   if (

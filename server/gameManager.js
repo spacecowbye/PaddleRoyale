@@ -1,6 +1,7 @@
 //import the ball and the paddle and the fucking mind that is supposed to build this
 const Ball = require("./models/Ball");
 const Paddle = require("./models/Paddle");
+const PowerUp = require("./models/Collectible");
 
 class GameManager {
   constructor(room, io) {
@@ -42,6 +43,7 @@ class GameManager {
       this.PADDLE_INITAL_Y,
       this.player2
     );
+    this.PowerUp = null;
   }
   updateScore(player) {
     this.gamePaused = true;
@@ -76,7 +78,8 @@ class GameManager {
     if (!this.gameStarted) {
       this.gameStarted = true;
       console.log(`setting up interval at tick rate of ${this.TICK_RATE}`);
-
+      
+      this.managePowerUps();
       setInterval(() => {
         if (!this.gamePaused) {
           const gameState = this.updateGame();
@@ -84,6 +87,38 @@ class GameManager {
         }
       }, this.TICK_RATE);
     }
+  }
+  managePowerUps() {
+    let powerUpSpawnInterval = Math.floor(Math.random() * (12000 - 8000 + 1)) + 8000; 
+  
+    const spawnNewPowerUp = () => {
+      if (!this.gamePaused) {
+        if (!this.PowerUp) {
+          this.spawnPowerUp();
+        } else {
+          
+          this.PowerUp = null;
+          this.io.to(this.ROOM_CODE).emit("PowerUpDespawn");
+          
+          
+          const nextSpawnDelay = Math.floor(Math.random() * (2000 - 1000 + 1)) + 1000;
+          setTimeout(spawnNewPowerUp, nextSpawnDelay);
+          return;
+        }
+  
+        
+        powerUpSpawnInterval = Math.floor(Math.random() * (12000 - 8000 + 1)) + 8000;
+      }
+  
+      setTimeout(spawnNewPowerUp, powerUpSpawnInterval);
+    };
+  
+    spawnNewPowerUp(); // Start managing the power-ups
+  }
+
+  spawnPowerUp() {
+    this.PowerUp = new PowerUp();
+    console.log(this.PowerUp);
   }
   updateBall() {
     // Scoring logic
@@ -122,7 +157,7 @@ class GameManager {
       // Ensure dx is negative (moving left) when hitting right paddle
       this.ball.dx = Math.max(
         -this.MAX_SPEED,
-        Math.min(this.MAX_SPEED, -Math.abs(this.ball.dx * 1.08))
+        Math.min(this.MAX_SPEED, -Math.abs(this.ball.dx * 1.1))
       );
       this.ball.dy = this.RETURN_ANGLES[clampedSegment];
 
@@ -147,7 +182,7 @@ class GameManager {
       // Ensure dx is positive (moving right) when hitting left paddle
       this.ball.dx = Math.max(
         -this.MAX_SPEED,
-        Math.min(this.MAX_SPEED, Math.abs(this.ball.dx * 1.08))
+        Math.min(this.MAX_SPEED, Math.abs(this.ball.dx * 1.1))
       );
       this.ball.dy = this.RETURN_ANGLES[clampedSegment];
 
@@ -176,6 +211,7 @@ class GameManager {
       Ball: this.ball,
       Paddle1: this.leftPaddle,
       Paddle2: this.rightPaddle,
+      PowerUp : this.PowerUp,
     };
     return GameState;
   }

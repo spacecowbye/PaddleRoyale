@@ -8,7 +8,7 @@ class Ball {
     this.dy = this.getRandomSpeedY();
   }
   getRandomSpeedX() {
-    return (Math.random() > 0.5 ? 1 : -1) * (6 + Math.random() * 4);
+    return (Math.random() > 0.5 ? 1 : -1) * (4 + Math.random() * 4);
   }
   getRandomSpeedY() {
     return (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 1.95);

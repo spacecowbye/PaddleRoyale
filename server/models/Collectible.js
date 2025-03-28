@@ -1,31 +1,21 @@
-
-class PowerUp{
-
-    constructor(x, y, ttl, type, sprite) {
-        this.x = x;
-        this.y = y;
-        this.timeToLive = ttl;
+class PowerUp {
+    constructor() {
         this.isActive = false;
-        this.type = type; 
-        this.sprite = sprite || 'assets/default_sprite.png'
+        this.width = 32;
+        this.height = 32;
+        this.timeToLive = 12 * 1000;
+        this.x = Math.floor(Math.random() * (498 - 150 + 1)) + 150;
+        this.y = Math.floor(Math.random() * (325 - 75 + 1)) + 75;
     }
-    activate(player){
+    
+    applyEffect(player) {
         this.isActive = true;
-        this.applyEffect(player);
-        console.log("Sprite picked up by ",player);
+        console.error("applyEffect() must be implemented by child classes");
+        throw new Error("Method not implemented");
     }
-    applyEffect(){
-        console.log("Each child class implement this");
-    }
-    deactivate(player){
+    deactivate(){
         this.isActive = false;
-        this.timeToLive = 0;
     }
-
-
 
 }
-
-
-
 module.exports = PowerUp;
