@@ -5,17 +5,10 @@ class PowerUp {
         this.y = Math.floor(Math.random() * (325 - 75 + 1)) + 75;
         this.width = 32;
         this.height = 32;
-        this.timeToLive = 12 * 1000;
+        this.timeToLive = 13.414 * 1000;
+        this.types = [];
+        this.type ='increase_paddle_size'
         
-    }
-    
-    applyEffect(player) {
-        this.isActive = true;
-        console.error("applyEffect() must be implemented by child classes");
-        throw new Error("Method not implemented");
-    }
-    deactivate(){
-        this.isActive = false;
     }
 
 }

@@ -189,7 +189,8 @@
         <button class="copy-button" onclick="copyRoomCode()">Copy Code</button>
       </div>
     </div>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+    <script src="music.js"></script>
     <script>
       function copyRoomCode() {
         const roomCode = document.getElementById("roomCode").textContent;
@@ -216,23 +217,31 @@
       });
       function drawMessageToScreenClient() {
         const canvas = document.querySelector("#gameCanvas");
-        const CANVAS_WIDTH = 652; 
+        const CANVAS_WIDTH = 652;
         const CANVAS_HEIGHT = 404;
-        const BACKGROUND_COLOR = "rgba(0,0,0,0.7)" 
-        const c = canvas.getContext('2d');
+        const BACKGROUND_COLOR = "rgba(0,0,0,0.7)";
+        const c = canvas.getContext("2d");
         c.fillStyle = BACKGROUND_COLOR;
         c.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
         c.font = "30px Inter";
         c.fillStyle = "#7fff7f";
         c.textAlign = "center";
-        c.fillText("Waiting for the other Player", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 10);
-        c.fillText("Personally, I am rooting for you",CANVAS_WIDTH/2,CANVAS_HEIGHT/2 + 50);
+        c.fillText(
+          "Waiting for the other Player",
+          CANVAS_WIDTH / 2,
+          CANVAS_HEIGHT / 2 + 10
+        );
+        c.fillText(
+          "Personally, I am rooting for you",
+          CANVAS_WIDTH / 2,
+          CANVAS_HEIGHT / 2 + 50
+        );
       }
-      
     </script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="game.js"></script>
     <script src="connect.js"></script>
+    <script></script>
   </body>
 </html>

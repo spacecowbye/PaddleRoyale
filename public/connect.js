@@ -13,6 +13,7 @@ const LINE_COLOR = "#FFFFFF"; // Soft white (Classic arcade style)
 let mySocket = null;
 
 const socket = io();
+AudioManager.play('gameMusic')
 
 socket.on("connect", async () => {
   mySocket = socket.id;
@@ -41,13 +42,20 @@ socket.on("connect", async () => {
       startGameLoop(GameState);
     });
   });
-
+  socket.on('PowerUpTaken',()=>{
+   AudioManager.play('powerUpCollected');
+  })
   socket.on("disconnect", () => {
     console.log(" Disconnected from WebSocket server");
   });
   socket.on("playerLeft", (data) => {
     console.log(data);
-    //showModalhere
+    //showModalhere 
+    socket.disconnect();
+    drawMessageToScreen("Redirecting you back to Homepage..");
+    setTimeout(() => {
+      window.location.href = `http://localhost:8080/index.html`;
+    },1500);
   });
 });
 

@@ -127,14 +127,22 @@ class GameManager {
     
     if (
       this.ball &&
-      this.PowerUp &&
+      this.PowerUp !== null &&
       this.ball.lastHitBy !== null &&
+      !this.PowerUp.isActive &&  // Ensure it's not already collected
       this.ball.x + this.ball.radius >= this.PowerUp.x &&  // Ball's right edge past PowerUp's left edge
       this.ball.x - this.ball.radius <= this.PowerUp.x + this.PowerUp.width &&  // Ball's left edge before PowerUp's right edge
       this.ball.y + this.ball.radius >= this.PowerUp.y &&  // Ball's bottom edge past PowerUp's top edge
       this.ball.y - this.ball.radius <= this.PowerUp.y + this.PowerUp.height  // Ball's top edge before PowerUp's bottom edge
     ){
-      console.log("POWERUP HIT");
+      console.log("Collision");
+      const powerUpTaken = this.PowerUp;
+      this.PowerUp = null;
+  
+      powerUpTaken.isActive = true;
+      this.io.to(this.ROOM_CODE).emit("PowerUpTaken");
+      this.handlePowerUp(powerUpTaken, this.ball.lastHitBy);
+      
     }
   
 
@@ -235,6 +243,29 @@ class GameManager {
     };
     return GameState;
   }
+  handlePowerUp(powerUp,player){
+
+    if(!powerUp || !player){
+      return;
+    }
+    const powerUpTTL = powerUp.timeToLive;
+    const increaseBy = 40;
+    switch(powerUp.type){
+      case "increase_paddle_size" :
+        let paddle = player == this.player1 ? this.leftPaddle : this.rightPaddle
+        paddle.length += increaseBy;
+        setTimeout(()=>{
+          console.log('powerup wore off');
+          paddle.length -= increaseBy;
+        },powerUpTTL);
+        break;
+
+
+
+      default :
+        console.log("Unknown power-up type:", powerUp.type);
+    }
+  }
   destroy() {
     console.log(`Destroying GameManager for room: ${this.ROOM_CODE}`);
 
@@ -255,6 +286,7 @@ class GameManager {
       clearInterval(this.gameLoopInterval);
       this.gameLoopInterval = null;
     }
+    
     Object.keys(this).forEach((property) =>{
       this[property] = null;
     })
