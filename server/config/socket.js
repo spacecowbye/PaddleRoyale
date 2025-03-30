@@ -12,7 +12,7 @@ class GameSocketManager {
       },
       transports: ["websocket", "polling"],
     });
-    this.rooms = new Map(); 
+    this.rooms = new Map();
     this.socketToRoom = new Map();
     this.setupSocketEvents();
   }
@@ -20,77 +20,145 @@ class GameSocketManager {
   setupSocketEvents() {
     this.io.on("connection", (socket) => {
       console.log("New socket connection made on ", socket.id);
-
+      let room;
       socket.on("joinRoom", (roomCode) => {
-        const room = RoomManager.getRoom(roomCode);
+        room = RoomManager.getRoom(roomCode);
         if (!room) {
           return;
         }
         socket.join(roomCode);
 
-        this.socketToRoom.set(socket.id, roomCode);
+        this.socketToRoom.set(socket.id, room);
         socket.emit("youJoined", { playerId: socket.id, roomCode });
         console.log(`${room.gameStatus} is the status of ${roomCode}`);
 
+        // Initialize GameManager when first player joins
+        if (!this.rooms.has(roomCode)) {
+          console.log(`Creating new GameManager for room ${roomCode}`);
+          const gameManager = new GameManager(roomCode, socket.id, this.io);
+          this.rooms.set(roomCode, gameManager);
+        } else {
+          // Add second player to existing GameManager
+          const gameManager = this.rooms.get(roomCode);
+          const playerId = socket.id;
+          gameManager.addPlayer(playerId);
+        }
+
         if (room.gameStatus === "Ready") {
           console.log(`${roomCode} game is ready with ${room.players}`);
-          this.io.to(roomCode).emit("GameStatus", "Ready");
+          this.StartGameCountdown(room);
         }
       });
 
-      socket.on("GameStart", () => {
-        const roomCode = this.socketToRoom.get(socket.id);
-        if (!roomCode) {
+      // Register paddle movement events for all connected sockets
+      socket.on("PADDLE_UP", () => {
+        const room = this.socketToRoom.get(socket.id);
+        if (!room) {
           return;
         }
-        const room = RoomManager.getRoom(roomCode);
+        const roomCode = room.roomCode;
+        if (!roomCode) return;
 
-        // Ensure only one game manager per room
-        let gameManager = this.rooms.get(roomCode);
-        if (!gameManager) {
-          gameManager = new GameManager(room, this.io);
-          this.rooms.set(roomCode, gameManager);
-          gameManager.setupGameLoop();
+        const gameManager = this.rooms.get(roomCode);
+        if (!gameManager) return;
+
+        let object = {
+          movePaddleUp: true,
+          movePaddleDown: false,
+        };
+        gameManager.updatePaddle(socket.id, object);
+      });
+
+      socket.on("PADDLE_DOWN", () => {
+        const room = this.socketToRoom.get(socket.id);
+        if (!room) {
+          return;
         }
+        const roomCode = room.roomCode;
+        if (!roomCode) return;
 
-        // Paddle movement events outside of GameStart
-        socket.on("PADDLE_UP", () => {
-          let object = {
-            movePaddleUp: true,
-            movePaddleDown: false,
-          };
-          gameManager.updatePaddle(socket.id, object);
-        });
+        const gameManager = this.rooms.get(roomCode);
+        if (!gameManager) return;
 
-        socket.on("PADDLE_DOWN", () => {
-          let object = {
-            movePaddleUp: false,
-            movePaddleDown: true,
-          };
-          gameManager.updatePaddle(socket.id, object);
-        });
+        let object = {
+          movePaddleUp: false,
+          movePaddleDown: true,
+        };
+        gameManager.updatePaddle(socket.id, object);
+      });
 
-        socket.on("PADDLE_STOP", () => {
-          let object = {
-            movePaddleUp: false,
-            movePaddleDown: false,
-          };
-          gameManager.updatePaddle(socket.id, object);
-        });
+      socket.on("PADDLE_STOP", () => {
+        const room = this.socketToRoom.get(socket.id);
+        if (!room) {
+          return;
+        }
+        const roomCode = room.roomCode;
+        if (!roomCode) return;
+
+        const gameManager = this.rooms.get(roomCode);
+        if (!gameManager) return;
+
+        let object = {
+          movePaddleUp: false,
+          movePaddleDown: false,
+        };
+        gameManager.updatePaddle(socket.id, object);
       });
 
       socket.on("disconnect", () => {
-        console.log("Socket disconnected ", socket.id);
+        const room = this.socketToRoom.get(socket.id);
+        if (!room) return;
 
-        let roomToDelete = this.socketToRoom.get(socket.id);
-        this.io
-          .to(roomToDelete)
-          .emit("playerLeft", `${socket.id} left ${roomToDelete}`);
+        const roomCode = room.roomCode;
+        const gameManager = this.rooms.get(roomCode);
+        if (!gameManager) return;
 
-        this.io.to(roomToDelete).emit("GameStatus", "Abandoned");
-        RoomManager.deleteRoom(roomToDelete);
+        console.log(`Socket ${socket.id} disconnected from ${roomCode}`);
+
+        // Notify the remaining player
+        const opponentId =
+          gameManager.player1 === socket.id
+            ? gameManager.player2
+            : gameManager.player1;
+
+        if (opponentId) {
+          this.io
+            .to(opponentId)
+            .emit("playerLeft", "Your opponent has disconnected.");
+        }
+
+        // Stop the game and clean up
+        gameManager.destroy(); // Clears intervals, timeouts, and resets game state
+
+        // Remove the game room from active rooms
+        this.rooms.delete(roomCode);
+        this.socketToRoom.delete(socket.id);
+
+        console.log(`Room ${roomCode} deleted after player disconnection.`);
       });
     });
+  }
+
+  StartGameCountdown(room) {
+    console.log("Inside Start Game Countdown");
+
+    let roomCode = room.roomCode;
+    this.io.to(roomCode).emit("CountDownUpdate", "May the best player Win");
+    let countdown = 3;
+    setTimeout(() => {
+      const countdownInterval = setInterval(() => {
+        this.io.to(roomCode).emit("CountDownUpdate", countdown);
+        countdown--;
+
+        if (countdown < 0) {
+          clearInterval(countdownInterval);
+          let gameManager = this.rooms.get(roomCode);
+          if (gameManager) {
+            gameManager.setupGameLoop();
+          }
+        }
+      }, 700);
+    }, 900);
   }
 }
 

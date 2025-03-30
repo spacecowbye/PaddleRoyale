@@ -4,12 +4,13 @@ const Paddle = require("./models/Paddle");
 const PowerUp = require("./models/Collectible");
 
 class GameManager {
-  constructor(room, io) {
+  constructor(roomCode,player, io) {
     // ROOM CONSTANTS
     console.log("New Game manager created");
-    this.ROOM_CODE = room.roomCode;
-    this.player1 = room.players[0];
-    this.player2 = room.players[1];
+    this.ROOM_CODE = roomCode
+    this.player1 = player
+    this.player2 = null;
+    this.activePlayers = 1;
 
     //PHYSICS STUFF CONTSTANTS
     this.RETURN_ANGLES = [-5, -3, -1, 1, 3, 5];
@@ -44,10 +45,15 @@ class GameManager {
       this.player2
     );
     this.PowerUp = null;
-
+    
+    //all intervals are here
     this.gameLoopInterval = null;
     this.powerUpTimeout = null;
     this.powerUpInterval = null;
+  }
+  addPlayer(player){
+    this.player2 = player;
+    this.activePlayers = 2;
   }
   updateScore(player) {
     this.gamePaused = true;
@@ -232,23 +238,26 @@ class GameManager {
   destroy() {
     console.log(`Destroying GameManager for room: ${this.ROOM_CODE}`);
 
-    // Clear power-up interval
+    
     if (this.powerUpInterval) {
       clearInterval(this.powerUpInterval);
       this.powerUpInterval = null;
     }
 
-    // Clear power-up timeout
+    
     if (this.powerUpTimeout) {
       clearTimeout(this.powerUpTimeout);
       this.powerUpTimeout = null;
     }
 
-    // Clear game loop interval
+    
     if (this.gameLoopInterval) {
       clearInterval(this.gameLoopInterval);
       this.gameLoopInterval = null;
     }
+    Object.keys(this).forEach((property) =>{
+      this[property] = null;
+    })
   }
 }
 

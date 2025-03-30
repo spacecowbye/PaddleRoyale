@@ -26,36 +26,22 @@ socket.on("connect", async () => {
   socket.on("youJoined", (data) => {
     console.log(data);
   });
+  socket.on("CountDownUpdate", (data) => {
+    drawMessageToScreen(data);
+  });
   socket.on("ScoreUpdate", (data) => {
     const { leftPlayerScore, rightPlayerScore } = data;
 
     document.getElementById("player1Score").textContent = leftPlayerScore;
     document.getElementById("player2Score").textContent = rightPlayerScore;
   });
-  socket.on("GameStatus", (data) => {
-    console.log("Game status is ", data);
-    if (data === "Ready") {
-      drawMessageToScreen("May the best player win");
 
-      setTimeout(() => {
-        let countdown = 3;
-        const countdownInterval = setInterval(() => {
-          drawMessageToScreen(countdown);
-          countdown--;
-
-          if (countdown < 0) {
-            clearInterval(countdownInterval);
-            socket.emit("GameStart");
-          }
-        }, 700);
-      }, 900);
-    }
-    socket.on("GameUpdate", (GameState) => {
-      requestAnimationFrame(() => {
-        startGameLoop(GameState);
-      });
+  socket.on("GameUpdate", (GameState) => {
+    requestAnimationFrame(() => {
+      startGameLoop(GameState);
     });
   });
+
   socket.on("disconnect", () => {
     console.log(" Disconnected from WebSocket server");
   });
@@ -93,7 +79,7 @@ function startGameLoop(GameState) {
   createDashedLine();
 
   // Draw the ball only if valid
-  const { Ball, Paddle1, Paddle2, PowerUp} = GameState;
+  const { Ball, Paddle1, Paddle2, PowerUp } = GameState;
   if (
     Ball &&
     Ball.x !== undefined &&
@@ -117,7 +103,7 @@ function startGameLoop(GameState) {
   if (opponentPaddle) {
     drawPaddle(opponentPaddle, false);
   }
-  if(PowerUp){
+  if (PowerUp) {
     drawPowerUp(PowerUp);
   }
 }
@@ -126,7 +112,7 @@ function drawPaddle(Paddle) {
   c.fillRect(Paddle.x, Paddle.y, Paddle.width, Paddle.length);
 }
 function drawPowerUp(powerUp) {
-  if (!powerUp) return; 
+  if (!powerUp) return;
 
   const size = powerUp.width; // Fixed size (24x24)
   const x = powerUp.x;
@@ -136,14 +122,14 @@ function drawPowerUp(powerUp) {
   c.fillStyle = "#00E5FF";
   c.shadowBlur = 10;
   c.shadowColor = "#00E5FF";
-  c.fillRect(x, y, size, size)
+  c.fillRect(x, y, size, size);
   // Inner white rectangle (smaller for effect)
-  const innerSize = size * 0.5; 
+  const innerSize = size * 0.5;
   const innerX = x + (size - innerSize) / 2;
   const innerY = y + (size - innerSize) / 2;
 
   c.fillStyle = "white";
-  c.shadowBlur = 0;   
+  c.shadowBlur = 0;
   c.fillRect(innerX, innerY, innerSize, innerSize);
 }
 function drawBall(Ball) {
@@ -183,12 +169,10 @@ function createDashedLine() {
 }
 document.addEventListener("keydown", (event) => {
   if (event.key === "w" || event.key === "W" || event.key === "ArrowUp") {
-    
     socket.emit("PADDLE_UP");
   }
   if (event.key === "s" || event.key === "S" || event.key === "ArrowDown") {
     socket.emit("PADDLE_DOWN");
-    
   }
 });
 document.addEventListener("keyup", (event) => {
@@ -201,6 +185,5 @@ document.addEventListener("keyup", (event) => {
     event.key === "ArrowDown"
   ) {
     socket.emit("PADDLE_STOP");
-    
   }
 });

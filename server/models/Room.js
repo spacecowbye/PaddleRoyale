@@ -18,6 +18,6 @@ class Room{
         return this;
         
         }
-
+    
 }
 module.exports = Room;
