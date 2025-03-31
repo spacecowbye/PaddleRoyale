@@ -6,6 +6,7 @@ class Paddle {
         this.dy = 0; // Movement speed (positive = down, negative = up)
         this.width = 15;
         this.length = 80;
+
     }
 
     move(up, down) {
@@ -34,7 +35,11 @@ class Paddle {
         this.x = x;
         this.y = y;
         this.dy = 0;
+        this.isGlowing = false;
+        this.glowColor = null;
     }
+
+    
 }
 
 module.exports = Paddle;
