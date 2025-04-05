@@ -11,11 +11,16 @@ const PADDLE_COLOR = "#00E5FF"; // Neon cyan (Cool contrast)
 const LINE_COLOR = "#FFFFFF"; // Soft white (Classic arcade style)
 
 let mySocket = null;
-let isGlowing = false;
-let glowColor = null;
+let countdown = null;
+// const megaformImage = new Image(); // Create a new Image object
+// megaformImage.src = 'assets/images/Megaform.png'; // Set the source
+// const downsizeImage = new Image();
+// downsizeImage.src = 'assets/images/Downsize.png';
+// const reverseImage = new Image();
+// reverseImage.src = 'assets/images/unoReverse.png';
 
 const socket = io();
-AudioManager.play('gameMusic')
+AudioManager.play("gameMusic");
 
 socket.on("connect", async () => {
   mySocket = socket.id;
@@ -44,29 +49,28 @@ socket.on("connect", async () => {
       startGameLoop(GameState);
     });
   });
-  socket.on('PowerUpTaken',(data)=>{
+  socket.on("PowerUpTaken", (data) => {
     const { player, powerUpType, duration } = data;
-    console.log('Duration value:', duration, 'Type:', typeof duration); // Debug line
-    AudioManager.play('powerUpCollected');
+    console.log("Duration value:", duration, "Type:", typeof duration); // Debug line
+    AudioManager.play("powerUpCollected");
     let actual = socket.id === data.player ? "You" : "Opponent";
     updatePowerupStatus(actual, powerUpType, duration);
   });
-  socket.on('PowerUpWoreOff',() =>{
+  socket.on("PowerUpWoreOff", () => {
     console.log("power up wore off");
-    AudioManager.play('powerDown');
-    
-  })
+    AudioManager.play("powerDown");
+  });
   socket.on("disconnect", () => {
     console.log(" Disconnected from WebSocket server");
   });
   socket.on("playerLeft", (data) => {
     console.log(data);
-    //showModalhere 
+    //showModalhere
     socket.disconnect();
     drawMessageToScreen("Redirecting you back to Homepage..");
     setTimeout(() => {
       window.location.href = `http://localhost:8080/index.html`;
-    },1500);
+    }, 1500);
   });
 });
 
@@ -127,28 +131,35 @@ function startGameLoop(GameState) {
   }
 }
 
-
 function updatePowerupStatus(owner, powerupName, duration) {
-  const powerupBox = document.getElementById('activePowerup');
-  document.getElementById('powerupName').textContent = powerupName;
-  
-  const ownerElement = document.getElementById('powerupOwner');
+  const powerupBox = document.getElementById("activePowerup");
+  document.getElementById("powerupName").textContent = powerupName;
+
+  const ownerElement = document.getElementById("powerupOwner");
   ownerElement.textContent = `Collected by: ${owner}`;
-  ownerElement.className = 'powerup-owner ' + 
-    (owner.toLowerCase().includes('you') ? 'owner-you' : 'owner-opponent');
-  
-  document.getElementById('powerupDescription').textContent = getPowerupDescription(powerupName);
-  
+  ownerElement.className =
+    "powerup-owner " +
+    (owner.toLowerCase().includes("you") ? "owner-you" : "owner-opponent");
+
+  document.getElementById("powerupDescription").textContent =
+    getPowerupDescription(powerupName);
+
   // Add validation for duration
   let remaining = Math.floor(Number(duration)) || 0; // Ensure it's a number
-  document.getElementById('powerupTimer').textContent = `${remaining}s remaining`;
-  
-  powerupBox.classList.add('powerup-active');
-  
+  document.getElementById(
+    "powerupTimer"
+  ).textContent = `${remaining}s remaining`;
+
+  powerupBox.classList.add("powerup-active");
+
   // Start countdown only if duration is valid
+  if (countdown) {
+    clearInterval(countdown);
+    countdown = null;
+  }
   if (remaining > 0) {
-    const timerElement = document.getElementById('powerupTimer');
-    const countdown = setInterval(() => {
+    const timerElement = document.getElementById("powerupTimer");
+    countdown = setInterval(() => {
       remaining--;
       timerElement.textContent = `${remaining}s remaining`;
       if (remaining <= 0) {
@@ -161,22 +172,25 @@ function updatePowerupStatus(owner, powerupName, duration) {
 
 function getPowerupDescription(name) {
   const descriptions = {
-    'speed boost': 'Increases paddle movement speed by 50% for a limited time.',
-    'Megaform': 'Makes your paddle 50% larger, giving you more reach.',
-    'Downsize': 'Management wants a smaller paddle',
-    'invisibility': 'Makes your paddle temporarily invisible to the opponent.',
-    'multi-ball': 'Spawns two additional balls for chaos!'
+    uKnowReverse: "W goes Down and S goes up",
+    Megaform: "Your paddle hit the gym. Now it's SWOLE.",
+    Downsize: "Management wants a smaller paddle",
+    invisibility: "Makes your paddle temporarily invisible to the opponent.",
+    "multi-ball": "Spawns two additional balls for chaos!",
   };
-  return descriptions[name] || 'This power-up has special effects during gameplay.';
+  return (
+    descriptions[name] || "This power-up has special effects during gameplay."
+  );
 }
 
 function resetPowerupDisplay() {
-  const powerupBox = document.getElementById('activePowerup');
-  powerupBox.classList.remove('powerup-active');
-  document.getElementById('powerupName').textContent = 'No power-up active';
-  document.getElementById('powerupOwner').textContent = '';
-  document.getElementById('powerupDescription').textContent = 'Collect a power-up during the game to see its effects here.';
-  document.getElementById('powerupTimer').textContent = '';
+  const powerupBox = document.getElementById("activePowerup");
+  powerupBox.classList.remove("powerup-active");
+  document.getElementById("powerupName").textContent = "No power-up active";
+  document.getElementById("powerupOwner").textContent = "";
+  document.getElementById("powerupDescription").textContent =
+    "Collect a power-up during the game to see its effects here.";
+  document.getElementById("powerupTimer").textContent = "";
 }
 
 function drawPaddle(Paddle) {
@@ -186,48 +200,69 @@ function drawPaddle(Paddle) {
 
 function drawPowerUp(powerUp) {
   if (!powerUp) return;
-  
-    const size = powerUp.width; // Fixed size (24x24)
-    const x = powerUp.x;
-    const y = powerUp.y;
-    const type = powerUp.type;
-    
-    switch(type){
-      case 'Megaform':
-        // Outer glowing cyan rectangle
-        c.fillStyle = "#00E5FF";
-        c.shadowBlur = 10;
-        c.shadowColor = "#00E5FF";
-        c.fillRect(x, y, size, size);
-        // Inner white rectangle (smaller for effect)
-        const innerSize = size * 0.5;
-        const innerX = x + (size - innerSize) / 2;
-        const innerY = y + (size - innerSize) / 2;
+  const size = powerUp.width; // Fixed size (24x24)
+  const x = powerUp.x;
+  const y = powerUp.y;
+  const type = powerUp.type;
+  switch (type) {
+    case "Megaform":
+      // Outer glowing cyan rectangle
+      c.fillStyle = "#00E5FF";
+      c.shadowBlur = 10;
+      c.shadowColor = "#00E5FF";
+      c.fillRect(x, y, size, size);
+      // Inner white rectangle
+      const innerSize = size * 0.5;
+      const innerX = x + (size - innerSize) / 2;
+      const innerY = y + (size - innerSize) / 2;
+      c.fillStyle = "white";
+      c.shadowBlur = 0;
+      c.fillRect(innerX, innerY, innerSize, innerSize);
+      break;
 
-        c.fillStyle = "white";
-        c.shadowBlur = 0;
-        c.fillRect(innerX, innerY, innerSize, innerSize);
-        break;
-        case 'Downsize':
-          // Outer glowing green rectangle
-          c.fillStyle = "#00FF88";  // Brighter green
-          c.shadowBlur = 12;        // Stronger glow for emphasis
-          c.shadowColor = "#00FF88";
-          c.fillRect(x, y, size, size);
-      
-          // Inner black rectangle (for contrast effect)
-          const downsizeInnerSize = size * 0.6;  // Slightly bigger than Megaform's inner shape
-          const downsizeInnerX = x + (size - downsizeInnerSize) / 2;
-          const downsizeInnerY = y + (size - downsizeInnerSize) / 2;
-      
-          c.fillStyle = "black";  // Strong contrast
-          c.shadowBlur = 0;
-          c.fillRect(downsizeInnerX, downsizeInnerY, downsizeInnerSize, downsizeInnerSize);
-          break;
+    case "Downsize":
+      // Outer glowing green rectangle
+      c.fillStyle = "#00FF88";
+      c.shadowBlur = 12;
+      c.shadowColor = "#00FF88";
+      c.fillRect(x, y, size, size);
+      // Inner black rectangle
+      const downsizeInnerSize = size * 0.6;
+      const downsizeInnerX = x + (size - downsizeInnerSize) / 2;
+      const downsizeInnerY = y + (size - downsizeInnerSize) / 2;
+      c.fillStyle = "black";
+      c.shadowBlur = 0;
+      c.fillRect(
+        downsizeInnerX,
+        downsizeInnerY,
+        downsizeInnerSize,
+        downsizeInnerSize
+      );
+
+      break;
+
+    case "uKnowReverse":
+      // Outer glowing orange rectangle
+      c.fillStyle = "#FF7700"; // Neon orange
+      c.shadowBlur = 12;
+      c.shadowColor = "#FF7700";
+      c.fillRect(x, y, size, size);
+      // Inner deep red rectangle
+      const reverseInnerSize = size * 0.6;
+      const reverseInnerX = x + (size - reverseInnerSize) / 2;
+      const reverseInnerY = y + (size - reverseInnerSize) / 2;
+      c.fillStyle = "#661100"; // Deep red for contrast
+      c.shadowBlur = 0;
+      c.fillRect(
+        reverseInnerX,
+        reverseInnerY,
+        reverseInnerSize,
+        reverseInnerSize
+      );
+
+      break;
   }
-
-    }
-
+}
 function drawBall(Ball) {
   if (
     !Ball ||

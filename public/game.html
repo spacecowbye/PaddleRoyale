@@ -275,6 +275,56 @@
         background: #fff;
         transform: scale(1.05);
       }
+
+      /* Sound Control Styles */
+      .sound-controls {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        background: rgba(34, 40, 49, 0.8);
+        border: 2px solid #7fff7f;
+        border-radius: 10px;
+        padding: 15px;
+        box-shadow: 0 0 15px rgba(127, 255, 127, 0.4);
+      }
+
+      .sound-label {
+        font-size: 16px;
+        color: #fff;
+        margin-bottom: 8px;
+        display: block;
+      }
+
+      .volume-slider {
+        width: 150px;
+        -webkit-appearance: none;
+        appearance: none;
+        height: 8px;
+        background: #7fff7f;
+        outline: none;
+        opacity: 0.7;
+        -webkit-transition: 0.2s;
+        transition: opacity 0.2s;
+        border-radius: 4px;
+      }
+
+      .volume-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 16px;
+        height: 16px;
+        background: #fff;
+        cursor: pointer;
+        border-radius: 50%;
+      }
+
+      .volume-slider::-moz-range-thumb {
+        width: 16px;
+        height: 16px;
+        background: #fff;
+        cursor: pointer;
+        border-radius: 50%;
+      }
     </style>
   </head>
   <body>
@@ -312,6 +362,11 @@
       </div>
     </div>
 
+    <div class="sound-controls">
+      <label for="masterVolume" class="sound-label">Master Volume</label>
+      <input type="range" min="0" max="1" value="1" step="0.01" class="volume-slider" id="masterVolume" oninput="setMasterVolume(this.value)">
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
     <script src="music.js"></script>
     <script>
@@ -331,7 +386,19 @@
             console.error("Failed to copy: ", err);
           });
       }
+      function adjustPowerupPanel() {
+        const panel = document.getElementById("powerupPanel");
+        const canvas = document.getElementById("gameCanvas");
 
+        if (canvas.getBoundingClientRect().left < 250) {
+          panel.classList.add("powerup-hidden");
+        } else {
+          panel.classList.remove("powerup-hidden");
+          panel.style.left = `${
+            (canvas.getBoundingClientRect().left - panel.offsetWidth) / 2
+          }px`;
+        }
+      }
       function drawMessageToScreenClient() {
         const canvas = document.querySelector("#gameCanvas");
         const CANVAS_WIDTH = 652;
@@ -367,25 +434,17 @@
           roomCodeElement.textContent = "ERROR"; // Indicate missing room code
           console.warn("Room code missing from URL parameters.");
         }
-
+        adjustPowerupPanel();
         drawMessageToScreenClient();
       });
-      function adjustPowerupPanel() {
-        const panel = document.getElementById("powerupPanel");
-        const canvas = document.getElementById("gameCanvas");
-
-        if (canvas.getBoundingClientRect().left < 250) {
-          panel.classList.add("powerup-hidden");
-        } else {
-          panel.classList.remove("powerup-hidden");
-          panel.style.left = `${
-            (canvas.getBoundingClientRect().left - panel.offsetWidth) / 2
-          }px`;
-        }
-      }
+     
 
       window.addEventListener("resize", adjustPowerupPanel);
-      window.addEventListener("load", adjustPowerupPanel);
+
+      // Sound Control Function
+      function setMasterVolume(value) {
+          Howler.volume(parseFloat(value));
+      }
     </script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>

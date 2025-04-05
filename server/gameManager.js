@@ -45,13 +45,17 @@ class GameManager {
       this.player2
     );
     this.PowerUp = null;
-    this.PowerUpTypes = ["Downsize", "Megaform"]; // Store available power-ups
+    this.PowerUpTypes = ["Downsize", "Megaform", "uKnowReverse"]; // Store available power-ups
     this.lastPowerUpType = null; // Track last generated type
+    this.playerWithReversedControls = null;
 
     //all intervals are here
+
     this.gameLoopInterval = null;
     this.powerUpTimeout = null;
     this.powerUpInterval = null;
+    this.handlePowerupTimeout = null;
+    
   }
   addPlayer(player) {
     this.player2 = player;
@@ -236,11 +240,18 @@ class GameManager {
     this.ball.y += this.ball.dy;
   }
 
-  updatePaddle(player, { movePaddleUp, movePaddleDown }) {
-    const paddle = player === this.player1 ? this.leftPaddle : this.rightPaddle;
+ 
 
-    paddle.move(movePaddleUp, movePaddleDown);
-  }
+updatePaddle(player, { movePaddleUp, movePaddleDown }) {
+    const paddle = player === this.player1 ? this.leftPaddle : this.rightPaddle;
+    
+    // If this player has reversed controls, swap the inputs
+    if (this.playerWithReversedControls === player) {
+        paddle.move(movePaddleDown, movePaddleUp); // Swap up and down
+    } else {
+        paddle.move(movePaddleUp, movePaddleDown); // Normal movement
+    }
+}
 
   updateGame() {
     this.updateBall();
@@ -260,28 +271,38 @@ class GameManager {
 
     const playerPaddle = player === this.player1 ? this.leftPaddle : this.rightPaddle;
     const opponentPaddle = player === this.player1 ? this.rightPaddle : this.leftPaddle;
+    const opponentPlayer = player === this.player1 ? this.player2 : this.player1;
+    
 
     switch (powerUp.type) {
-        case "Megaform":
-            playerPaddle.length += 50;
-            setTimeout(() => {
-                playerPaddle.length -= 50;
-                this.io.to(this.ROOM_CODE).emit("PowerUpWoreOff");
-            }, powerUp.timeToLive);
-            break;
+      case "Megaform":
+        playerPaddle.length += 50;
+        this.handlePowerupTimeout = setTimeout(() => {
+          playerPaddle.length -= 50;
+          this.io.to(this.ROOM_CODE).emit("PowerUpWoreOff");
+        }, powerUp.timeToLive);
+        break;
 
-        case "Downsize":
-            opponentPaddle.length -= 25;
-            setTimeout(() => {
-                opponentPaddle.length += 25;
-                this.io.to(this.ROOM_CODE).emit("PowerUpWoreOff");
-            }, powerUp.timeToLive);
-            break;
+      case "Downsize":
+        this.handlePowerupTimeout = othpponentPaddle.length -= 25;
+        setTimeout(() => {
+          opponentPaddle.length += 25;
+          this.io.to(this.ROOM_CODE).emit("PowerUpWoreOff");
+        }, powerUp.timeToLive);
+        break;
+      case "uKnowReverse":
+        this.playerWithReversedControls = opponentPlayer;
+        
+        this.handlePowerupTimeout = setTimeout(() => {
+          this.playerWithReversedControls = null;
+          this.io.to(this.ROOM_CODE).emit("PowerUpWoreOff");
+        }, powerUp.timeToLive);
+        break;
 
-        default:
-            console.log("Unknown power-up type:", powerUp.type);
+      default:
+        console.log("Unknown power-up type:", powerUp.type);
     }
-}
+  }
   destroy() {
     console.log(`Destroying GameManager for room: ${this.ROOM_CODE}`);
 
@@ -299,7 +320,10 @@ class GameManager {
       clearInterval(this.gameLoopInterval);
       this.gameLoopInterval = null;
     }
-
+    if(this.handlePowerupTimeout){
+      clearTimeout(this.handlePowerupTimeout);
+      this.handlePowerupTimeout = null;
+    }
     Object.keys(this).forEach((property) => {
       this[property] = null;
     });
