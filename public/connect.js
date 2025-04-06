@@ -76,7 +76,7 @@ socket.on("connect", async () => {
     socket.disconnect();
     drawMessageToScreen("Redirecting you back to Homepage..");
     setTimeout(() => {
-      window.location.href = `${BASE_URL}/index.html`;
+      window.location.href = `/index.html`;
     }, 1500);
   });
 });
