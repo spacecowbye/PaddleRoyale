@@ -2,6 +2,7 @@
 const Ball = require("./models/Ball");
 const Paddle = require("./models/Paddle");
 const PowerUp = require("./models/Collectible");
+const Shield = require("./models/Shield");
 
 class GameManager {
   constructor(roomCode, player, io) {
@@ -44,9 +45,12 @@ class GameManager {
       this.player2
     );
     this.PowerUp = null;
-    this.PowerUpTypes = ["Downsize", "Megaform", "uKnowReverse","Aegis"]; // Store available power-ups
+    this.PowerUpTypes = ["Downsize", "Megaform", "uKnowReverse"]; // Store available power-ups
+    //this.PowerUpTypes = [ "Megaform","Aegis"]; // Store available power-ups
     this.lastPowerUpType = null; // Track last generated type
     this.playerWithReversedControls = null;
+    this.player1Shield = null;
+    this.player2Shield = null;
 
     //all intervals are here
 
@@ -294,6 +298,18 @@ updatePaddle(player, { movePaddleUp, movePaddleDown }) {
           this.playerWithReversedControls = null;
           this.io.to(this.ROOM_CODE).emit("PowerUpWoreOff");
         }, powerUp.timeToLive);
+        break;
+      case "Aegis":
+        let shield;
+        if (player === this.player1) {
+              shield = this.player1Shield = new Shield(0,0,8,this.CANVAS_HEIGHT);
+        } else {
+              shield = this.player2Shield = new Shield(this.CANVAS_WIDTH-8,0,8,this.CANVAS_HEIGHT);
+        }
+        console.log(shield);
+        this.io.to(this.ROOM_CODE).emit("ShieldActivated", { 
+            shield : shield
+          });
         break;
 
       default:

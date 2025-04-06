@@ -1,4 +1,5 @@
 // global error modal manipulation
+let BASE_URL = "https://paddleroyale.onrender.com/";
 function showError(message) {
     document.getElementById("roomCodeModal").style.display = "none";
     document.getElementById("errorMessage").innerText = message;
@@ -20,11 +21,11 @@ document.getElementById("errorModal").addEventListener("click", function (event)
 // Play button - Create new room
 document.querySelector('.play').addEventListener('click', async () => {
     console.log("Play button clicked");
-
+    
     try {
-        const response = await axios.post("http://localhost:8080/create-room");
+        const response = await axios.post(`${BASE_URL}/create-room`);
         const {roomCode} = response.data;        
-        window.location.href = `http://localhost:8080/game.html?room=${roomCode}`;
+        window.location.href = `${BASE_URL}.html?room=${roomCode}`;
        
     } catch (error) {
         showError("No response from Server, please try later");
@@ -82,7 +83,7 @@ submitButton.addEventListener('click', async() => {
     
     try {
         console.log("Sending join-room request with code:", roomCode);
-        window.location.href = `http://localhost:8080/game.html?room=${roomCode}`;
+        window.location.href = `${BASE_URL}/game.html?room=${roomCode}`;
 
       
     } catch (error) {

@@ -9,18 +9,20 @@ const BACKGROUND_COLOR = "#0A192F"; // Dark blue (Futuristic)
 const BALL_COLOR = "#FF3860"; // Neon red (High contrast)
 const PADDLE_COLOR = "#00E5FF"; // Neon cyan (Cool contrast)
 const LINE_COLOR = "#FFFFFF"; // Soft white (Classic arcade style)
-const SHIELD_COLOR = '#7fff7f'
+const SHIELD_COLOR = "#7fff7f"; // Light green
+let BASE_URL = "https://paddleroyale.onrender.com/"
+
+
 
 let mySocket = null;
 let countdown = null;
+let currentShield = null;
 // const megaformImage = new Image(); // Create a new Image object
 // megaformImage.src = 'assets/images/Megaform.png'; // Set the source
 // const downsizeImage = new Image();
 // downsizeImage.src = 'assets/images/Downsize.png';
 // const reverseImage = new Image();
 // reverseImage.src = 'assets/images/unoReverse.png';
-const shieldImage = new Image();
-shieldImage.src = 'assets/images/shield.jpg';
 
 const socket = io();
 AudioManager.play("gameMusic");
@@ -46,7 +48,10 @@ socket.on("connect", async () => {
     document.getElementById("player1Score").textContent = leftPlayerScore;
     document.getElementById("player2Score").textContent = rightPlayerScore;
   });
-
+  socket.on("ShieldActivated", (data) => {
+    currentShield = data.shield;
+    
+});
   socket.on("GameUpdate", (GameState) => {
     requestAnimationFrame(() => {
       startGameLoop(GameState);
@@ -54,16 +59,9 @@ socket.on("connect", async () => {
   });
   socket.on("PowerUpTaken", (data) => {
     const { player, powerUpType, duration } = data;
-    console.log("Duration value:", duration, "Type:", typeof duration); // Debug line
     AudioManager.play("powerUpCollected");
     let actual = socket.id === data.player ? "You" : "Opponent";
     updatePowerupStatus(actual, powerUpType, duration);
-  });
-  socket.on('ShieldsUp', (data) => {
-    console.log("Shields on");
-    const { player, shield } = data;
-    console.log("Shield object:", shield); // Add this line
-    drawShield(shield);
   });
   socket.on("PowerUpWoreOff", () => {
     console.log("power up wore off");
@@ -78,7 +76,7 @@ socket.on("connect", async () => {
     socket.disconnect();
     drawMessageToScreen("Redirecting you back to Homepage..");
     setTimeout(() => {
-      window.location.href = `http://localhost:8080/index.html`;
+      window.location.href = `${BASE_URL}/index.html`;
     }, 1500);
   });
 });
@@ -88,7 +86,7 @@ async function validateRoom(socketId) {
     const URLparams = new URLSearchParams(window.location.search);
     const roomCode = URLparams.get("room");
     const response = await axios.post(
-      `http://localhost:8080/join-room/${roomCode}`,
+      `${BASE_URL}/join-room/${roomCode}`,
       { socketId }
     );
     console.log(response.data);
@@ -99,7 +97,7 @@ async function validateRoom(socketId) {
       window.alert("Something Bad Happpened");
     }
 
-    window.location.href = `http://localhost:8080/`;
+    window.location.href = BASE_URL;
   }
 }
 
@@ -111,7 +109,7 @@ function startGameLoop(GameState) {
   c.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
   createDashedLine();
 
-  // Draw the ball only if valid
+  
   const { Ball, Paddle1, Paddle2, PowerUp } = GameState;
   if (
     Ball &&
@@ -121,6 +119,7 @@ function startGameLoop(GameState) {
   ) {
     drawBall(Ball);
   }
+  
   let myPaddle, opponentPaddle;
   if (Paddle1.player === socket.id) {
     myPaddle = Paddle1;
@@ -139,6 +138,9 @@ function startGameLoop(GameState) {
   if (PowerUp) {
     drawPowerUp(PowerUp);
   }
+  if (currentShield) {
+    drawShield(currentShield);
+}
 }
 
 function updatePowerupStatus(owner, powerupName, duration) {
@@ -182,7 +184,7 @@ function updatePowerupStatus(owner, powerupName, duration) {
 
 function getPowerupDescription(name) {
   const descriptions = {
-    uKnowReverse: "W goes Down and S goes up",
+    uKnowReverse: "Who rewired the controls?! Oh wait, you did. W goes down, S goes up!",
     Megaform: "Your paddle hit the gym. Now it's SWOLE.",
     Downsize: "Management wants a smaller paddle",
     invisibility: "Makes your paddle temporarily invisible to the opponent.",
@@ -248,7 +250,6 @@ function drawPowerUp(powerUp) {
         downsizeInnerSize,
         downsizeInnerSize
       );
-
       break;
 
     case "uKnowReverse":
@@ -270,6 +271,34 @@ function drawPowerUp(powerUp) {
         reverseInnerSize
       );
       break;
+      case "Aegis":
+        // Outer glowing indigo shield
+        c.fillStyle = "#6C00FF"; // Deep violet-indigo
+        c.shadowBlur = 15;
+        c.shadowColor = "#6C00FF";
+        c.fillRect(x, y, size, size);
+  
+        // Inner metallic silver hexagon
+        const centerX = x + size / 2;
+        const centerY = y + size / 2;
+        const radius = size * 0.3;
+  
+        c.beginPath();
+        for (let i = 0; i < 6; i++) {
+          const angle = Math.PI / 3 * i - Math.PI / 6;
+          const px = centerX + radius * Math.cos(angle);
+          const py = centerY + radius * Math.sin(angle);
+          if (i === 0) {
+            c.moveTo(px, py);
+          } else {
+            c.lineTo(px, py);
+          }
+        }
+        c.closePath();
+        c.fillStyle = "#C0C0C0"; // Metallic silver
+        c.shadowBlur = 0;
+        c.fill();
+        break;
       
   }
 }
@@ -328,3 +357,47 @@ document.addEventListener("keyup", (event) => {
     socket.emit("PADDLE_STOP");
   }
 });
+
+
+function drawShield(shield) {
+  if (!shield) return;
+
+  const { x, y, width, height } = shield;
+  
+  c.save();
+
+  // ---- Base Glowing Beam ----
+  const gradient = c.createLinearGradient(0, y, 0, y + height);
+  gradient.addColorStop(0, 'rgba(0,255,128,0.2)');
+  gradient.addColorStop(0.5, 'rgba(0,255,128,0.7)'); // Brighter center
+  gradient.addColorStop(1, 'rgba(0,255,128,0.2)');
+  
+  c.fillStyle = gradient;
+  c.globalCompositeOperation = 'lighter'; // Enhances glow effect
+  
+  // Simple glow effect (more performant than shadow)
+  for (let i = 0; i < 3; i++) {
+    c.fillRect(
+      x - i, 
+      y - i, 
+      width + i*2, 
+      height + i*2
+    );
+  }
+
+  // ---- Core Shield ----
+  c.fillStyle = 'rgba(0,255,128,0.3)';
+  c.fillRect(x, y, width, height);
+
+  // ---- Subtle Animation ----
+  const pulse = Math.sin(Date.now() / 500) * 0.1 + 0.9; // Gentle pulse
+  c.fillStyle = `rgba(0,255,128,${0.2 * pulse})`;
+  c.fillRect(x - 5, y - 5, width + 10, height + 10);
+
+  // ---- Border Effect ----
+  c.strokeStyle = 'rgba(0,255,128,0.8)';
+  c.lineWidth = 2;
+  c.strokeRect(x - 2, y - 2, width + 4, height + 4);
+
+  c.restore();
+}
