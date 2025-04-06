@@ -25,7 +25,7 @@ document.querySelector('.play').addEventListener('click', async () => {
     try {
         const response = await axios.post(`${BASE_URL}/create-room`);
         const {roomCode} = response.data;        
-        window.location.href = `${BASE_URL}.html?room=${roomCode}`;
+        window.location.href = `/game.html?room=${roomCode}`;
        
     } catch (error) {
         showError("No response from Server, please try later");
@@ -83,7 +83,8 @@ submitButton.addEventListener('click', async() => {
     
     try {
         console.log("Sending join-room request with code:", roomCode);
-        window.location.href = `${BASE_URL}/game.html?room=${roomCode}`;
+        window.location.href = `/game.html?room=${roomCode}`;
+
 
       
     } catch (error) {
