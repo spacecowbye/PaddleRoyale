@@ -1,5 +1,5 @@
 // global error modal manipulation
-let BASE_URL = "https://paddleroyale.onrender.com/";
+let BASE_URL = "https://paddleroyale.onrender.com";
 function showError(message) {
     document.getElementById("roomCodeModal").style.display = "none";
     document.getElementById("errorMessage").innerText = message;
