@@ -281,49 +281,61 @@
         position: absolute;
         bottom: 20px;
         right: 20px;
-        background: rgba(34, 40, 49, 0.8);
+        background: rgba(22, 28, 36, 0.9);
         border: 2px solid #7fff7f;
-        border-radius: 10px;
-        padding: 15px;
-        box-shadow: 0 0 15px rgba(127, 255, 127, 0.4);
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 0 20px rgba(127, 255, 127, 0.3);
+        backdrop-filter: blur(4px);
+        transition: all 0.3s ease-in-out;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
       }
 
       .sound-label {
-        font-size: 16px;
-        color: #fff;
-        margin-bottom: 8px;
-        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        color: #7fff7f;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        text-shadow: 0 0 5px rgba(127, 255, 127, 0.4);
       }
 
       .volume-slider {
-        width: 150px;
-        -webkit-appearance: none;
-        appearance: none;
-        height: 8px;
-        background: #7fff7f;
-        outline: none;
-        opacity: 0.7;
-        -webkit-transition: 0.2s;
-        transition: opacity 0.2s;
+        width: 180px;
+        height: 6px;
         border-radius: 4px;
+        background: linear-gradient(90deg, #7fff7f 0%, #00ffaa 100%);
+        outline: none;
+        appearance: none;
+        cursor: pointer;
+        box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.3);
+        transition: all 0.2s ease;
       }
 
       .volume-slider::-webkit-slider-thumb {
-        -webkit-appearance: none;
         appearance: none;
-        width: 16px;
-        height: 16px;
-        background: #fff;
-        cursor: pointer;
+        width: 18px;
+        height: 18px;
         border-radius: 50%;
+        background: #ffffff;
+        box-shadow: 0 0 5px rgba(127, 255, 127, 0.7);
+        transition: all 0.2s ease;
+      }
+
+      .volume-slider::-webkit-slider-thumb:hover {
+        background: #7fff7f;
+        transform: scale(1.2);
       }
 
       .volume-slider::-moz-range-thumb {
-        width: 16px;
-        height: 16px;
-        background: #fff;
-        cursor: pointer;
+        width: 18px;
+        height: 18px;
         border-radius: 50%;
+        background: #ffffff;
+        box-shadow: 0 0 5px rgba(127, 255, 127, 0.7);
       }
     </style>
   </head>
@@ -363,13 +375,23 @@
     </div>
 
     <div class="sound-controls">
-      <label for="masterVolume" class="sound-label">Master Volume</label>
-      <input type="range" min="0" max="1" value="1" step="0.01" class="volume-slider" id="masterVolume" oninput="setMasterVolume(this.value)">
+      <span class="sound-label">Volume</span>
+      <div style="display: flex; align-items: center; gap: 10px">
+        <input type="range" class="volume-slider" min="0" max="1" step="0.01" value="1" />
+      </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
     <script src="music.js"></script>
     <script>
+        function setMasterVolume(value) {
+            if (window.Howler) {
+              Howler.volume(parseFloat(value));
+            } else {
+              console.error("Howler.js is not loaded");
+            }
+          }
+      // Add event listener to the volume slider
       function copyRoomCode() {
         const roomCode = document.getElementById("roomCode").textContent;
         navigator.clipboard
@@ -427,7 +449,17 @@
         const roomCodeElement = document.getElementById("roomCode");
         const URLparams = new URLSearchParams(window.location.search);
         const roomCode = URLparams.get("room");
+        const volumeSlider = document.querySelector(".volume-slider");
 
+
+        if (volumeSlider) {
+      volumeSlider.addEventListener("input", function() {
+        setMasterVolume(this.value);
+      });
+      
+      // Initialize to full volume
+      setMasterVolume(volumeSlider.value);
+    }
         if (roomCode && roomCodeElement) {
           roomCodeElement.textContent = roomCode;
         } else if (roomCodeElement) {
@@ -436,15 +468,10 @@
         }
         adjustPowerupPanel();
         drawMessageToScreenClient();
+        
       });
-     
 
       window.addEventListener("resize", adjustPowerupPanel);
-
-      // Sound Control Function
-      function setMasterVolume(value) {
-          Howler.volume(parseFloat(value));
-      }
     </script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>

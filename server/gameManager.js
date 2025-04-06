@@ -6,7 +6,6 @@ const PowerUp = require("./models/Collectible");
 class GameManager {
   constructor(roomCode, player, io) {
     // ROOM CONSTANTS
-    console.log("New Game manager created");
     this.ROOM_CODE = roomCode;
     this.player1 = player;
     this.player2 = null;
@@ -45,7 +44,7 @@ class GameManager {
       this.player2
     );
     this.PowerUp = null;
-    this.PowerUpTypes = ["Downsize", "Megaform", "uKnowReverse"]; // Store available power-ups
+    this.PowerUpTypes = ["Downsize", "Megaform", "uKnowReverse","Aegis"]; // Store available power-ups
     this.lastPowerUpType = null; // Track last generated type
     this.playerWithReversedControls = null;
 
@@ -282,17 +281,15 @@ updatePaddle(player, { movePaddleUp, movePaddleDown }) {
           this.io.to(this.ROOM_CODE).emit("PowerUpWoreOff");
         }, powerUp.timeToLive);
         break;
-
       case "Downsize":
-        this.handlePowerupTimeout = othpponentPaddle.length -= 25;
-        setTimeout(() => {
-          opponentPaddle.length += 25;
-          this.io.to(this.ROOM_CODE).emit("PowerUpWoreOff");
-        }, powerUp.timeToLive);
-        break;
+        opponentPaddle.length -= 25;
+        this.handlePowerupTimeout = setTimeout(() => {
+           opponentPaddle.length += 25;
+        this.io.to(this.ROOM_CODE).emit("PowerUpWoreOff");
+      }, powerUp.timeToLive);
+
       case "uKnowReverse":
         this.playerWithReversedControls = opponentPlayer;
-        
         this.handlePowerupTimeout = setTimeout(() => {
           this.playerWithReversedControls = null;
           this.io.to(this.ROOM_CODE).emit("PowerUpWoreOff");
@@ -324,9 +321,9 @@ updatePaddle(player, { movePaddleUp, movePaddleDown }) {
       clearTimeout(this.handlePowerupTimeout);
       this.handlePowerupTimeout = null;
     }
-    Object.keys(this).forEach((property) => {
-      this[property] = null;
-    });
+    // Object.keys(this).forEach((property) => {
+    //   this[property] = null;
+    // });
   }
 }
 

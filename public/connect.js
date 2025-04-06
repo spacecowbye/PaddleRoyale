@@ -9,6 +9,7 @@ const BACKGROUND_COLOR = "#0A192F"; // Dark blue (Futuristic)
 const BALL_COLOR = "#FF3860"; // Neon red (High contrast)
 const PADDLE_COLOR = "#00E5FF"; // Neon cyan (Cool contrast)
 const LINE_COLOR = "#FFFFFF"; // Soft white (Classic arcade style)
+const SHIELD_COLOR = '#7fff7f'
 
 let mySocket = null;
 let countdown = null;
@@ -18,6 +19,8 @@ let countdown = null;
 // downsizeImage.src = 'assets/images/Downsize.png';
 // const reverseImage = new Image();
 // reverseImage.src = 'assets/images/unoReverse.png';
+const shieldImage = new Image();
+shieldImage.src = 'assets/images/shield.jpg';
 
 const socket = io();
 AudioManager.play("gameMusic");
@@ -56,6 +59,12 @@ socket.on("connect", async () => {
     let actual = socket.id === data.player ? "You" : "Opponent";
     updatePowerupStatus(actual, powerUpType, duration);
   });
+  socket.on('ShieldsUp', (data) => {
+    console.log("Shields on");
+    const { player, shield } = data;
+    console.log("Shield object:", shield); // Add this line
+    drawShield(shield);
+  });
   socket.on("PowerUpWoreOff", () => {
     console.log("power up wore off");
     AudioManager.play("powerDown");
@@ -93,6 +102,7 @@ async function validateRoom(socketId) {
     window.location.href = `http://localhost:8080/`;
   }
 }
+
 function startGameLoop(GameState) {
   c.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
@@ -259,8 +269,8 @@ function drawPowerUp(powerUp) {
         reverseInnerSize,
         reverseInnerSize
       );
-
       break;
+      
   }
 }
 function drawBall(Ball) {
