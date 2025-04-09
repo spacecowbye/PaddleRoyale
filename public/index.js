@@ -22,14 +22,15 @@ document.querySelector('.play').addEventListener('click', async () => {
     console.log("Play button clicked");
 
     try {
-        const response = await axios.post("http://localhost:8080/create-room");
-        const {roomCode} = response.data;        
-        window.location.href = `http://localhost:8080/game.html?room=${roomCode}`;
-       
+        const response = await axios.post("https://paddleroyale.onrender.com/create-room");
+        const { roomCode } = response.data;
+        window.location.href = `https://paddleroyale.onrender.com/game.html?room=${roomCode}`;
+
     } catch (error) {
         showError("No response from Server, please try later");
     }
 });
+
 
 // Modal functionality for entering room code
 const modal = document.getElementById("roomCodeModal");
@@ -82,7 +83,7 @@ submitButton.addEventListener('click', async() => {
     
     try {
         console.log("Sending join-room request with code:", roomCode);
-        window.location.href = `http://localhost:8080/game.html?room=${roomCode}`;
+        window.location.href = `https://paddleroyale.onrender.com/game.html?room=${roomCode}`;
 
       
     } catch (error) {
