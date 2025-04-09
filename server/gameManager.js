@@ -2,6 +2,7 @@
 const Ball = require("./models/Ball");
 const Paddle = require("./models/Paddle");
 const PowerUp = require("./models/Collectible");
+const Shield = require("./models/Shield");
 
 class GameManager {
   constructor(roomCode, player, io) {
@@ -44,9 +45,12 @@ class GameManager {
       this.player2
     );
     this.PowerUp = null;
-    this.PowerUpTypes = ["Downsize", "Megaform", "uKnowReverse","Aegis"]; // Store available power-ups
+    //this.PowerUpTypes = ["Downsize", "Megaform", "uKnowReverse","Aegis"]; // Store available power-ups
+    this.PowerUpTypes = ["Downsize","Aegis"]; // Store available power-ups
     this.lastPowerUpType = null; // Track last generated type
     this.playerWithReversedControls = null;
+    this.player1Shield = null;
+    this.player2Shield = null;
 
     //all intervals are here
 
@@ -162,6 +166,26 @@ class GameManager {
       this.handlePowerUp(powerUpTaken, this.ball.lastHitBy);
     }
 
+    if (
+      this.ball.x + this.ball.radius >= this.CANVAS_WIDTH &&
+      this.player2Shield !== null
+    ) {
+      // Ball hits right shield
+      this.ball.x = this.CANVAS_WIDTH - this.ball.radius - 1; // Push ball just inside canvas
+      this.ball.dx = -Math.abs(this.ball.dx); // Reflect to the left
+      
+      return;
+    }
+    if (
+      this.ball.x - this.ball.radius <= 0 &&
+      this.player1Shield !== null
+    ) {
+      // Ball hits left shield
+      this.ball.x = this.ball.radius + 1; // Push ball just inside canvas
+      this.ball.dx = Math.abs(this.ball.dx); // Reflect to the right
+      return;
+    }
+    
     // Scoring logic
     if (this.ball.x + this.ball.radius >= this.CANVAS_WIDTH) {
       this.updateScore(this.player1);
@@ -295,6 +319,30 @@ updatePaddle(player, { movePaddleUp, movePaddleDown }) {
           this.io.to(this.ROOM_CODE).emit("PowerUpWoreOff");
         }, powerUp.timeToLive);
         break;
+      
+      case "Aegis":
+        let shield;
+        if (player === this.player1) {
+              shield = this.player1Shield = new Shield(0,0,8,this.CANVAS_HEIGHT);
+        } else {
+              shield = this.player2Shield = new Shield(this.CANVAS_WIDTH-8,0,8,this.CANVAS_HEIGHT);
+        }
+        
+        this.io.to(this.ROOM_CODE).emit("ShieldsUp", { 
+            shield : shield
+          });
+          this.handlePowerupTimeout = setTimeout(() => {
+            
+            this.io.to(this.ROOM_CODE).emit("ShieldsDown");
+            if (player === this.player1) {
+              this.player1Shield = null;
+            } else {
+              this.player2Shield = null;
+            }
+       }, powerUp.timeToLive);
+ 
+          break;
+      
 
       default:
         console.log("Unknown power-up type:", powerUp.type);

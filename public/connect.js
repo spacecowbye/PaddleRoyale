@@ -9,10 +9,12 @@ const BACKGROUND_COLOR = "#0A192F"; // Dark blue (Futuristic)
 const BALL_COLOR = "#FF3860"; // Neon red (High contrast)
 const PADDLE_COLOR = "#00E5FF"; // Neon cyan (Cool contrast)
 const LINE_COLOR = "#FFFFFF"; // Soft white (Classic arcade style)
-const SHIELD_COLOR = '#7fff7f'
+const SHIELD_COLOR = "#39FF14"; // Neon green (sharp contrast, energetic)
+
 
 let mySocket = null;
 let countdown = null;
+let activeShield = null;
 // const megaformImage = new Image(); // Create a new Image object
 // megaformImage.src = 'assets/images/Megaform.png'; // Set the source
 // const downsizeImage = new Image();
@@ -21,6 +23,7 @@ let countdown = null;
 // reverseImage.src = 'assets/images/unoReverse.png';
 const shieldImage = new Image();
 shieldImage.src = 'assets/images/shield.jpg';
+
 
 const socket = io();
 AudioManager.play("gameMusic");
@@ -37,6 +40,7 @@ socket.on("connect", async () => {
   socket.on("youJoined", (data) => {
     console.log(data);
   });
+  
   socket.on("CountDownUpdate", (data) => {
     drawMessageToScreen(data);
   });
@@ -61,10 +65,15 @@ socket.on("connect", async () => {
   });
   socket.on('ShieldsUp', (data) => {
     console.log("Shields on");
-    const { player, shield } = data;
-    console.log("Shield object:", shield); // Add this line
-    drawShield(shield);
+    AudioManager.play("shieldsUp");
+    
+    activeShield = data.shield;
   });
+  
+  socket.on("ShieldsDown",() => {
+    activeShield = null;
+    AudioManager.play('shieldsDown');
+  })
   socket.on("PowerUpWoreOff", () => {
     console.log("power up wore off");
     AudioManager.play("powerDown");
@@ -138,6 +147,9 @@ function startGameLoop(GameState) {
   }
   if (PowerUp) {
     drawPowerUp(PowerUp);
+  }
+  if(activeShield){
+    drawShield(activeShield);
   }
 }
 
@@ -270,8 +282,64 @@ function drawPowerUp(powerUp) {
         reverseInnerSize
       );
       break;
+    
+    case "Aegis":
+        // Outer glowing indigo shield
+        c.fillStyle = "#6C00FF"; // Deep violet-indigo
+        c.shadowBlur = 15;
+        c.shadowColor = "#6C00FF";
+        c.fillRect(x, y, size, size);
+  
+        // Inner metallic silver hexagon
+        const centerX = x + size / 2;
+        const centerY = y + size / 2;
+        const radius = size * 0.3;
+  
+        c.beginPath();
+        for (let i = 0; i < 6; i++) {
+          const angle = Math.PI / 3 * i - Math.PI / 6;
+          const px = centerX + radius * Math.cos(angle);
+          const py = centerY + radius * Math.sin(angle);
+          if (i === 0) {
+            c.moveTo(px, py);
+          } else {
+            c.lineTo(px, py);
+          }
+        }
+        c.closePath();
+        c.fillStyle = "#C0C0C0"; // Metallic silver
+        c.shadowBlur = 0;
+        c.fill();
+        break;
+
       
   }
+}
+
+function drawShield(shield) {
+  if (!shield) return;
+
+  const fillSpeed = 10; // pixels per frame
+  if (!shield.fillHeight) shield.fillHeight = 0;
+
+  if (shield.fillHeight < shield.height) {
+    shield.fillHeight += fillSpeed;
+    if (shield.fillHeight > shield.height) {
+      shield.fillHeight = shield.height;
+    }
+  }
+
+  const fillY = shield.y + (shield.height / 2) - (shield.fillHeight / 2);
+
+  c.save();
+  c.shadowColor = SHIELD_COLOR;
+  c.shadowBlur = 20;
+  c.fillStyle = SHIELD_COLOR;
+
+  // Draw vertical fill inside shield boundary
+  c.fillRect(shield.x, fillY, shield.width, shield.fillHeight);
+
+  c.restore();
 }
 function drawBall(Ball) {
   if (
