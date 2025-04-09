@@ -87,7 +87,7 @@ socket.on("connect", async () => {
     socket.disconnect();
     drawMessageToScreen("Redirecting you back to Homepage..");
     setTimeout(() => {
-      window.location.href = `https://paddleroyale.onrender.com/`;
+      window.location.href = `https://paddleroyale-production.up.railway.app/`;
     }, 1500);
   });
 });
@@ -97,7 +97,7 @@ async function validateRoom(socketId) {
     const URLparams = new URLSearchParams(window.location.search);
     const roomCode = URLparams.get("room");
     const response = await axios.post(
-      `https://paddleroyale.onrender.com/join-room/${roomCode}`,
+      `https://paddleroyale-production.up.railway.app/join-room/${roomCode}`,
       { socketId }
     );
     console.log(response.data);
@@ -108,7 +108,7 @@ async function validateRoom(socketId) {
       window.alert("Something Bad Happpened");
     }
 
-    window.location.href = `https://paddleroyale.onrender.com/`;
+    window.location.href = `https://paddleroyale-production.up.railway.app/`;
   }
 }
 

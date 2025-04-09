@@ -22,9 +22,9 @@ document.querySelector('.play').addEventListener('click', async () => {
     console.log("Play button clicked");
 
     try {
-        const response = await axios.post("https://paddleroyale.onrender.com/create-room");
+        const response = await axios.post("https://paddleroyale-production.up.railway.app/create-room");
         const { roomCode } = response.data;
-        window.location.href = `https://paddleroyale.onrender.com/game.html?room=${roomCode}`;
+        window.location.href = `https://paddleroyale-production.up.railway.app/game.html?room=${roomCode}`;
 
     } catch (error) {
         showError("No response from Server, please try later");
@@ -83,7 +83,7 @@ submitButton.addEventListener('click', async() => {
     
     try {
         console.log("Sending join-room request with code:", roomCode);
-        window.location.href = `https://paddleroyale.onrender.com/game.html?room=${roomCode}`;
+        window.location.href = `https://paddleroyale-production.up.railway.app/game.html?room=${roomCode}`;
 
       
     } catch (error) {
