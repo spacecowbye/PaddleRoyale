@@ -45,13 +45,8 @@ class GameManager {
       this.player2
     );
     this.PowerUp = null;
-<<<<<<< HEAD
     this.PowerUpTypes = ["Downsize", "Megaform", "uKnowReverse"]; // Store available power-ups
     //this.PowerUpTypes = [ "Megaform","Aegis"]; // Store available power-ups
-=======
-    //this.PowerUpTypes = ["Downsize", "Megaform", "uKnowReverse","Aegis"]; // Store available power-ups
-    this.PowerUpTypes = ["Downsize","Aegis"]; // Store available power-ups
->>>>>>> bee3377 ([STABLE] added Aegis Shield powerup)
     this.lastPowerUpType = null; // Track last generated type
     this.playerWithReversedControls = null;
     this.player1Shield = null;
@@ -324,10 +319,6 @@ updatePaddle(player, { movePaddleUp, movePaddleDown }) {
           this.io.to(this.ROOM_CODE).emit("PowerUpWoreOff");
         }, powerUp.timeToLive);
         break;
-<<<<<<< HEAD
-=======
-      
->>>>>>> bee3377 ([STABLE] added Aegis Shield powerup)
       case "Aegis":
         let shield;
         if (player === this.player1) {
@@ -335,30 +326,11 @@ updatePaddle(player, { movePaddleUp, movePaddleDown }) {
         } else {
               shield = this.player2Shield = new Shield(this.CANVAS_WIDTH-8,0,8,this.CANVAS_HEIGHT);
         }
-<<<<<<< HEAD
         console.log(shield);
         this.io.to(this.ROOM_CODE).emit("ShieldActivated", { 
             shield : shield
           });
         break;
-=======
-        
-        this.io.to(this.ROOM_CODE).emit("ShieldsUp", { 
-            shield : shield
-          });
-          this.handlePowerupTimeout = setTimeout(() => {
-            
-            this.io.to(this.ROOM_CODE).emit("ShieldsDown");
-            if (player === this.player1) {
-              this.player1Shield = null;
-            } else {
-              this.player2Shield = null;
-            }
-       }, powerUp.timeToLive);
- 
-          break;
-      
->>>>>>> bee3377 ([STABLE] added Aegis Shield powerup)
 
       default:
         console.log("Unknown power-up type:", powerUp.type);
