@@ -11,16 +11,25 @@ const AudioManager = {
     volume: 0.5,
   }),
   powerDown: new Howl({
-    src: ["/assets/music/powerDown.mp3"],
+    src: ["assets/music/powerDown.mp3"],
     loop: false,
     volume: 0.5,
   }),
-
+  shieldsUp : new Howl({
+    src : ["assets/music/ShieldsUp.mp3"],
+    loop: false,
+    volume: 0.4,
+  }),
+  shieldsDown : new Howl({
+    src : ["assets/music/ShieldsDown.mp3"],
+    loop: false,
+    volume: 0.4,
+  }),
   play: function (soundName) {
     if (this[soundName]) {
       if (soundName !== "gameMusic") {
         
-        this.gameMusic.volume(0.35); 
+        this.gameMusic.volume(0.32); 
 
         // Play the sound
         const soundId = this[soundName].play();
