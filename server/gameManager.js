@@ -2,7 +2,6 @@
 const Ball = require("./models/Ball");
 const Paddle = require("./models/Paddle");
 const PowerUp = require("./models/Collectible");
-const Shield = require("./models/Shield");
 
 class GameManager {
   constructor(roomCode, player, io) {
@@ -45,12 +44,11 @@ class GameManager {
       this.player2
     );
     this.PowerUp = null;
-    //this.PowerUpTypes = ["Downsize", "Megaform", "uKnowReverse","Aegis"]; // Store available power-ups
-    this.PowerUpTypes = ["Downsize","Aegis"]; // Store available power-ups
+    //this.PowerUpTypes = ["Downsize", "Megaform", "uKnowReverse"]; // Store available power-ups
+    this.PowerUpTypes = ["Downsize", "Megaform"]; // Store available power-ups
+
     this.lastPowerUpType = null; // Track last generated type
     this.playerWithReversedControls = null;
-    this.player1Shield = null;
-    this.player2Shield = null;
 
     //all intervals are here
 
@@ -58,41 +56,54 @@ class GameManager {
     this.powerUpTimeout = null;
     this.powerUpInterval = null;
     this.handlePowerupTimeout = null;
-    
   }
   addPlayer(player) {
     this.player2 = player;
     this.activePlayers = 2;
   }
-  updateScore(player) {
+updateScore(player) {
+  if (player === this.player1) {
+    this.player1Score += 1;
+  } else {
+    this.player2Score += 1;
+  }
+
+  this.io.to(this.ROOM_CODE).emit("ScoreUpdate", {
+    leftPlayerScore: this.player1Score,
+    rightPlayerScore: this.player2Score,
+  });
+
+  const isGameOver = this.player1Score >= 10 || this.player2Score >= 10;
+
+  if (isGameOver) {
+    this.io.to(this.ROOM_CODE).emit("GameOver", {
+      winner: player,
+      finalScore: {
+        leftPlayerScore: this.player1Score,
+        rightPlayerScore: this.player2Score,
+      },
+    });
+
+    // Stop game loop instantly before ball moves again
+    this.gamePaused = true;
+
+    setTimeout(() => {
+      this.destroy();
+    }, 2000);
+
+    return;
+  } else {
+    // Only pause and reset ball if game isn't over
     this.gamePaused = true;
     this.ball.reset(this.CANVAS_WIDTH / 2, this.CANVAS_HEIGHT / 2);
-
-    if (player === this.player1) {
-      this.player1Score += 1;
-      if (this.player1Score === 10) {
-        this.io.to(this.ROOM_CODE).emit("GameOver", {
-          winner: this.player1,
-        });
-      }
-    } else {
-      this.player2Score += 1;
-      if (this.player2Score === 10) {
-        this.io.to(this.ROOM_CODE).emit("GameOver", {
-          winner: this.player2,
-        });
-      }
-    }
-
-    this.io.to(this.ROOM_CODE).emit("ScoreUpdate", {
-      leftPlayerScore: this.player1Score,
-      rightPlayerScore: this.player2Score,
-    });
 
     setTimeout(() => {
       this.gamePaused = false;
     }, 2000);
   }
+}
+
+
   setupGameLoop() {
     if (!this.gameStarted) {
       this.gameStarted = true;
@@ -165,27 +176,6 @@ class GameManager {
       });
       this.handlePowerUp(powerUpTaken, this.ball.lastHitBy);
     }
-
-    if (
-      this.ball.x + this.ball.radius >= this.CANVAS_WIDTH &&
-      this.player2Shield !== null
-    ) {
-      // Ball hits right shield
-      this.ball.x = this.CANVAS_WIDTH - this.ball.radius - 1; // Push ball just inside canvas
-      this.ball.dx = -Math.abs(this.ball.dx); // Reflect to the left
-      
-      return;
-    }
-    if (
-      this.ball.x - this.ball.radius <= 0 &&
-      this.player1Shield !== null
-    ) {
-      // Ball hits left shield
-      this.ball.x = this.ball.radius + 1; // Push ball just inside canvas
-      this.ball.dx = Math.abs(this.ball.dx); // Reflect to the right
-      return;
-    }
-    
     // Scoring logic
     if (this.ball.x + this.ball.radius >= this.CANVAS_WIDTH) {
       this.updateScore(this.player1);
@@ -263,18 +253,16 @@ class GameManager {
     this.ball.y += this.ball.dy;
   }
 
- 
-
-updatePaddle(player, { movePaddleUp, movePaddleDown }) {
+  updatePaddle(player, { movePaddleUp, movePaddleDown }) {
     const paddle = player === this.player1 ? this.leftPaddle : this.rightPaddle;
-    
+
     // If this player has reversed controls, swap the inputs
     if (this.playerWithReversedControls === player) {
-        paddle.move(movePaddleDown, movePaddleUp); // Swap up and down
+      paddle.move(movePaddleDown, movePaddleUp); // Swap up and down
     } else {
-        paddle.move(movePaddleUp, movePaddleDown); // Normal movement
+      paddle.move(movePaddleUp, movePaddleDown); // Normal movement
     }
-}
+  }
 
   updateGame() {
     this.updateBall();
@@ -292,10 +280,12 @@ updatePaddle(player, { movePaddleUp, movePaddleDown }) {
   handlePowerUp(powerUp, player) {
     if (!powerUp || !player) return;
 
-    const playerPaddle = player === this.player1 ? this.leftPaddle : this.rightPaddle;
-    const opponentPaddle = player === this.player1 ? this.rightPaddle : this.leftPaddle;
-    const opponentPlayer = player === this.player1 ? this.player2 : this.player1;
-    
+    const playerPaddle =
+      player === this.player1 ? this.leftPaddle : this.rightPaddle;
+    const opponentPaddle =
+      player === this.player1 ? this.rightPaddle : this.leftPaddle;
+    const opponentPlayer =
+      player === this.player1 ? this.player2 : this.player1;
 
     switch (powerUp.type) {
       case "Megaform":
@@ -308,41 +298,17 @@ updatePaddle(player, { movePaddleUp, movePaddleDown }) {
       case "Downsize":
         opponentPaddle.length -= 25;
         this.handlePowerupTimeout = setTimeout(() => {
-           opponentPaddle.length += 25;
-        this.io.to(this.ROOM_CODE).emit("PowerUpWoreOff");
-      }, powerUp.timeToLive);
-
-      case "uKnowReverse":
-        this.playerWithReversedControls = opponentPlayer;
-        this.handlePowerupTimeout = setTimeout(() => {
-          this.playerWithReversedControls = null;
+          opponentPaddle.length += 25;
           this.io.to(this.ROOM_CODE).emit("PowerUpWoreOff");
         }, powerUp.timeToLive);
-        break;
-      
-      case "Aegis":
-        let shield;
-        if (player === this.player1) {
-              shield = this.player1Shield = new Shield(0,0,8,this.CANVAS_HEIGHT);
-        } else {
-              shield = this.player2Shield = new Shield(this.CANVAS_WIDTH-8,0,8,this.CANVAS_HEIGHT);
-        }
-        
-        this.io.to(this.ROOM_CODE).emit("ShieldsUp", { 
-            shield : shield
-          });
-          this.handlePowerupTimeout = setTimeout(() => {
-            
-            this.io.to(this.ROOM_CODE).emit("ShieldsDown");
-            if (player === this.player1) {
-              this.player1Shield = null;
-            } else {
-              this.player2Shield = null;
-            }
-       }, powerUp.timeToLive);
- 
-          break;
-      
+
+      // case "uKnowReverse":
+      //   this.playerWithReversedControls = opponentPlayer;
+      //   this.handlePowerupTimeout = setTimeout(() => {
+      //     this.playerWithReversedControls = null;
+      //     this.io.to(this.ROOM_CODE).emit("PowerUpWoreOff");
+      //   }, powerUp.timeToLive);
+      //   break;
 
       default:
         console.log("Unknown power-up type:", powerUp.type);
@@ -365,7 +331,7 @@ updatePaddle(player, { movePaddleUp, movePaddleDown }) {
       clearInterval(this.gameLoopInterval);
       this.gameLoopInterval = null;
     }
-    if(this.handlePowerupTimeout){
+    if (this.handlePowerupTimeout) {
       clearTimeout(this.handlePowerupTimeout);
       this.handlePowerupTimeout = null;
     }

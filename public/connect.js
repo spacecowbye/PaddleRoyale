@@ -9,24 +9,26 @@ const BACKGROUND_COLOR = "#0A192F"; // Dark blue (Futuristic)
 const BALL_COLOR = "#FF3860"; // Neon red (High contrast)
 const PADDLE_COLOR = "#00E5FF"; // Neon cyan (Cool contrast)
 const LINE_COLOR = "#FFFFFF"; // Soft white (Classic arcade style)
-const SHIELD_COLOR = "#39FF14"; // Neon green (sharp contrast, energetic)
-
 
 let mySocket = null;
 let countdown = null;
-let activeShield = null;
-// const megaformImage = new Image(); // Create a new Image object
-// megaformImage.src = 'assets/images/Megaform.png'; // Set the source
-// const downsizeImage = new Image();
-// downsizeImage.src = 'assets/images/Downsize.png';
-// const reverseImage = new Image();
-// reverseImage.src = 'assets/images/unoReverse.png';
-const shieldImage = new Image();
-shieldImage.src = 'assets/images/shield.jpg';
+let currentGameState = null;
+let isGameRunning = false;
+let isGameOver = false;
+let animationId = null;
+
+
+const gameOverModal = document.getElementById('gameOverModal');
+const gameOverTitle = document.getElementById('gameOverTitle');
+const gameOverMessage = document.getElementById('gameOverMessage');
+const playAgainButton = document.getElementById('playAgainButton'); // Make sure these are defined
+const returnHomeButton = document.getElementById('returnHomeButton'); // Make sure these are defined
+
+
 
 
 const socket = io();
-AudioManager.play("gameMusic");
+if(!isGameOver)AudioManager.play("gameMusic");
 
 socket.on("connect", async () => {
   mySocket = socket.id;
@@ -40,7 +42,311 @@ socket.on("connect", async () => {
   socket.on("youJoined", (data) => {
     console.log(data);
   });
-  
+
+socket.on("GameOver", (data) => {
+  const { winner, finalScore, player1SocketId, player2SocketId } = data; // Destructure player IDs from data
+  isGameOver = true; // Assuming 'isGameOver' is a global flag you use
+
+  // It's good practice to ensure AudioManager exists and has the stop method
+  if (typeof AudioManager !== 'undefined' && AudioManager.stop) {
+    AudioManager.stop("gameMusic");
+  } else {
+    console.warn("AudioManager.stop not found or not initialized.");
+    // Fallback for stopping all Howler sounds if AudioManager is custom or not ready
+    if (window.Howler) {
+      Howler.stop(); // Stop all sounds if AudioManager isn't working
+    }
+  }
+
+  // Update the score display one final time to ensure it shows the final scores
+  if (finalScore) {
+    document.getElementById("player1Score").textContent = finalScore.leftPlayerScore;
+    document.getElementById("player2Score").textContent = finalScore.rightPlayerScore;
+  }
+
+  // Determine who won from the client's perspective
+  let winnerNameForDisplay;
+  if (socket.id === winner) { // 'winner' here is the socket ID of the winning player
+      winnerNameForDisplay = "You";
+      // Play game won sound only if 'AudioManager' is defined
+      if (typeof AudioManager !== 'undefined' && AudioManager.play) {
+        setTimeout(() => { 
+          AudioManager.play("gameEnd");
+        }, 653);
+      }
+  } else {
+      winnerNameForDisplay = "Opponent";
+      
+      if (typeof AudioManager !== 'undefined' && AudioManager.play) {
+        setTimeout(() => {
+          
+          AudioManager.play("gameEnd"); 
+        }, 500);
+      }
+  }
+
+  // Show the game over screen (the modal)
+  showGameOverScreen(winnerNameForDisplay);
+
+  // Optionally disconnect after a delay to let user see the final state
+  // Consider if you want to disconnect immediately or allow rejoining/play again.
+  // For 'Play Again', you might want to keep the socket alive or re-establish.
+  // For 'Return Home', disconnecting here makes sense.
+  // I recommend letting the "Return Home" button handle disconnect, not an automatic timeout.
+  // setTimeout(() => {
+  //   socket.disconnect();
+  // }, 3000);
+});
+
+
+
+let celebrationParticles = [];
+let celebrationActive = false;
+let celebrationStartTime = 0;
+
+function showGameOverScreen(winnerDisplayString) {
+    console.log("Game over detected. Displaying modal with celebration.");
+    
+    if (animationId) {
+        cancelAnimationFrame(animationId);
+    }
+
+  if (winnerDisplayString === "You") {
+    gameOverTitle.textContent = "YOU WON";
+    gameOverMessage.textContent = "Nicely done!";
+    startVictoryCelebration();
+} else if (winnerDisplayString === "Opponent") {
+    gameOverTitle.textContent = "YOU LOST";
+    gameOverMessage.textContent = "Better luck next time!";
+    startDefeatEffect();
+} else {
+    gameOverTitle.textContent = "Game Abandoned!";
+    gameOverMessage.textContent = "The game ended unexpectedly.";
+}
+
+    if (gameOverModal) {
+        gameOverModal.style.display = 'flex';
+        gameOverModal.style.transform = 'scale(0.8)';
+        gameOverModal.style.opacity = '0';
+        requestAnimationFrame(() => {
+            gameOverModal.style.transition = 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
+            gameOverModal.style.transform = 'scale(1)';
+            gameOverModal.style.opacity = '1';
+        });
+    }
+}
+
+function startVictoryCelebration() {
+    celebrationActive = true;
+    celebrationStartTime = Date.now();
+    celebrationParticles = [];
+
+    for (let i = 0; i < 70; i++) {
+        celebrationParticles.push({
+            x: Math.random() * CANVAS_WIDTH,
+            y: Math.random() * CANVAS_HEIGHT,
+            vx: (Math.random() - 0.5) * 8,
+            vy: (Math.random() - 0.5) * 8,
+            size: Math.random() * 6 + 3,
+            color: ['#39FF14', '#00FFFF', '#FF00FF', '#FFD700'][i % 4],
+            life: 1.0,
+            trail: [],
+            type: Math.random() < 0.6 ? 'ball' : 'spark'
+        });
+    }
+
+    flashCanvas('#00FFFF', 0.6);
+    showNeonText("YOU DOMINATED!", '#39FF14');
+    setTimeout(() => showNeonText("Better unplug, loser 😎", '#FF00FF'), 1000);
+    celebrationLoop();
+}
+
+function startDefeatEffect() {
+    flashCanvas('#FF0033', 0.4);
+    celebrationActive = true;
+    celebrationStartTime = Date.now();
+    celebrationParticles = [];
+
+    for (let i = 0; i < 60; i++) {
+        celebrationParticles.push({
+            x: CANVAS_WIDTH / 2 + (Math.random() - 0.5) * 100,
+            y: CANVAS_HEIGHT / 2 + (Math.random() - 0.5) * 50,
+            vx: (Math.random() - 0.5) * 1.5,
+            vy: Math.random() * 2 + 1,
+            size: Math.random() * 3 + 2,
+            color: ['#FF4444', '#660000', '#999999'][i % 3],
+            life: 0.9,
+            trail: [],
+            type: 'spark'
+        });
+    }
+
+    showNeonText("YOU LOSE", '#FF4444');
+    setTimeout(() => showNeonText("That was... embarrassing 😬", '#999999'), 1200);
+    celebrationLoop();
+}
+
+function celebrationLoop() {
+    if (!celebrationActive) return;
+
+    c.fillStyle = BACKGROUND_COLOR;
+    c.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+    drawCenterLine();
+
+    celebrationParticles.forEach((particle, index) => {
+        particle.x += particle.vx;
+        particle.y += particle.vy;
+
+        if (particle.x <= particle.size || particle.x >= CANVAS_WIDTH - particle.size) {
+            particle.vx *= -0.9;
+            particle.x = Math.max(particle.size, Math.min(CANVAS_WIDTH - particle.size, particle.x));
+        }
+        if (particle.y <= particle.size || particle.y >= CANVAS_HEIGHT - particle.size) {
+            particle.vy *= -0.9;
+            particle.y = Math.max(particle.size, Math.min(CANVAS_HEIGHT - particle.size, particle.y));
+        }
+
+        particle.trail.push({ x: particle.x, y: particle.y });
+        if (particle.trail.length > 6) particle.trail.shift();
+
+        particle.trail.forEach((pos, i) => {
+            const alpha = (i / particle.trail.length) * particle.life * 0.4;
+            c.globalAlpha = alpha;
+            c.fillStyle = particle.color;
+            const trailSize = particle.size * (i / particle.trail.length) * 0.6;
+            if (particle.type === 'ball') {
+                c.beginPath();
+                c.arc(pos.x, pos.y, trailSize, 0, Math.PI * 2);
+                c.fill();
+            } else {
+                c.fillRect(pos.x - trailSize / 2, pos.y - trailSize / 2, trailSize, trailSize);
+            }
+        });
+
+        c.globalAlpha = particle.life;
+        c.shadowColor = particle.color;
+        c.shadowBlur = 15;
+        c.fillStyle = particle.color;
+        if (particle.type === 'ball') {
+            c.beginPath();
+            c.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+            c.fill();
+        } else {
+            c.fillRect(particle.x - particle.size / 2, particle.y - particle.size / 2, particle.size, particle.size);
+        }
+
+        c.shadowBlur = 0;
+        c.globalAlpha = 1;
+
+        particle.life -= 0.012;
+        particle.size *= 0.998;
+        if (particle.life <= 0) {
+            celebrationParticles.splice(index, 1);
+        }
+    });
+
+    const elapsed = Date.now() - celebrationStartTime;
+    if (celebrationParticles.length > 0 && elapsed < 4000) {
+        requestAnimationFrame(celebrationLoop);
+    } else {
+        celebrationActive = false;
+        c.fillStyle = BACKGROUND_COLOR;
+        c.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        drawCenterLine();
+    }
+}
+
+function flashCanvas(color, intensity = 0.5) {
+    const originalComposite = c.globalCompositeOperation;
+    c.globalCompositeOperation = 'screen';
+    c.globalAlpha = intensity;
+    c.fillStyle = color;
+    c.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    c.globalAlpha = 1;
+    c.globalCompositeOperation = originalComposite;
+
+    setTimeout(() => {
+        c.fillStyle = BACKGROUND_COLOR;
+        c.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        drawCenterLine();
+    }, 150);
+}
+
+function drawCenterLine() {
+    c.strokeStyle = LINE_COLOR;
+    c.lineWidth = 2;
+    c.setLineDash([10, 10]);
+    c.beginPath();
+    c.moveTo(CANVAS_WIDTH / 2, 0);
+    c.lineTo(CANVAS_WIDTH / 2, CANVAS_HEIGHT);
+    c.stroke();
+    c.setLineDash([]);
+}
+
+function showNeonText(textContent, color) {
+    const text = document.createElement('div');
+    text.textContent = textContent;
+    text.style.position = 'absolute';
+    text.style.top = '45%';
+    text.style.left = '50%';
+    text.style.transform = 'translate(-50%, -50%) scale(0.8)';
+    text.style.fontSize = '48px';
+    text.style.fontFamily = `'Orbitron', sans-serif`;
+    text.style.color = color;
+    text.style.textShadow = `0 0 8px ${color}, 0 0 20px ${color}`;
+    text.style.transition = 'all 0.5s ease';
+    text.style.opacity = '0';
+
+    document.body.appendChild(text);
+
+    requestAnimationFrame(() => {
+        text.style.opacity = '1';
+        text.style.transform = 'translate(-50%, -50%) scale(1.2)';
+    });
+
+    setTimeout(() => {
+        text.style.opacity = '0';
+        text.style.transform = 'translate(-50%, -50%) scale(0.9)';
+        setTimeout(() => text.remove(), 1000);
+    }, 1800);
+}
+
+
+
+
+
+// Call this when modal is closed to ensure canvas is clean
+function cleanupCelebration() {
+    celebrationActive = false;
+    celebrationParticles = [];
+    c.fillStyle = BACKGROUND_COLOR;
+    c.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    drawCenterLine();
+}
+
+// Add these event listeners if they are not already in your `connect.js`
+// Make sure to define 'socket' before this point (e.g., const socket = io();)
+// And define 'roomCode' if needed for a 'requestNewGame' event
+playAgainButton.addEventListener('click', () => {
+    if (gameOverModal) {
+        gameOverModal.style.display = 'none'; // Hide the modal
+    }
+    // You'd typically emit an event to the server to request a new game
+    // For example: socket.emit('requestNewGame', { roomCode: currentRoomCode });
+    // This is a placeholder for a client-side restart or going to home for now.
+    window.location.href = 'index.html'; // Or reload current game with new room logic
+});
+
+returnHomeButton.addEventListener('click', () => {
+    if (gameOverModal) {
+        gameOverModal.style.display = 'none'; // Hide the modal
+    }
+    if (socket && socket.connected) { // Only disconnect if connected
+        socket.disconnect();
+    }
+    window.location.href = 'index.html'; // Navigate back to the home page
+});
   socket.on("CountDownUpdate", (data) => {
     drawMessageToScreen(data);
   });
@@ -52,44 +358,40 @@ socket.on("connect", async () => {
   });
 
   socket.on("GameUpdate", (GameState) => {
-    requestAnimationFrame(() => {
-      startGameLoop(GameState);
-    });
+    currentGameState = GameState;
+
+    // Start the render loop if it's not already running
+    if (!isGameRunning) {
+      isGameRunning = true;
+      startRenderLoop();
+    }
   });
+
   socket.on("PowerUpTaken", (data) => {
     const { player, powerUpType, duration } = data;
     console.log("Duration value:", duration, "Type:", typeof duration); // Debug line
-    AudioManager.play("powerUpCollected");
+    if(!isGameOver)AudioManager.play("powerUpCollected");
     let actual = socket.id === data.player ? "You" : "Opponent";
     updatePowerupStatus(actual, powerUpType, duration);
   });
-  socket.on('ShieldsUp', (data) => {
-    console.log("Shields on");
-    AudioManager.play("shieldsUp");
-    
-    activeShield = data.shield;
-  });
-  
-  socket.on("ShieldsDown",() => {
-    activeShield = null;
-    AudioManager.play('shieldsDown');
-  })
+
   socket.on("PowerUpWoreOff", () => {
     console.log("power up wore off");
-    AudioManager.play("powerDown");
+    if(!isGameOver)AudioManager.play("powerDown");
   });
   socket.on("disconnect", () => {
     console.log(" Disconnected from WebSocket server");
   });
   socket.on("playerLeft", (data) => {
-    console.log(data);
-    //showModalhere
-    socket.disconnect();
-    drawMessageToScreen("Redirecting you back to Homepage..");
-    setTimeout(() => {
-      window.location.href = `http://localhost:8080/index.html`;
-    }, 1500);
-  });
+  console.log(data);
+  //TODO :  show player left modal here
+  stopRenderLoop();
+  socket.disconnect();
+  drawMessageToScreen("Redirecting you back to Homepage..");
+  setTimeout(() => {
+    window.location.href = `http://localhost:8080/index.html`;
+  }, 1500);
+});
 });
 
 async function validateRoom(socketId) {
@@ -111,8 +413,22 @@ async function validateRoom(socketId) {
     window.location.href = `http://localhost:8080/`;
   }
 }
+function startRenderLoop() {
+  function render() {
+    if (isGameRunning && currentGameState) {
+      // Clear and render the current game state
+      renderGame(currentGameState);
+    }
 
-function startGameLoop(GameState) {
+    // Continue the loop
+    animationId = requestAnimationFrame(render);
+  }
+
+  // Start the loop
+  animationId = requestAnimationFrame(render);
+}
+
+function renderGame(GameState) {
   c.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
   // Draw background first
@@ -130,6 +446,7 @@ function startGameLoop(GameState) {
   ) {
     drawBall(Ball);
   }
+
   let myPaddle, opponentPaddle;
   if (Paddle1.player === socket.id) {
     myPaddle = Paddle1;
@@ -148,11 +465,16 @@ function startGameLoop(GameState) {
   if (PowerUp) {
     drawPowerUp(PowerUp);
   }
-  if(activeShield){
-    drawShield(activeShield);
-  }
 }
 
+function stopRenderLoop() {
+  isGameRunning = false;
+  if (animationId) {
+    cancelAnimationFrame(animationId);
+    animationId = null;
+  }
+  currentGameState = null;
+}
 function updatePowerupStatus(owner, powerupName, duration) {
   const powerupBox = document.getElementById("activePowerup");
   document.getElementById("powerupName").textContent = powerupName;
@@ -194,11 +516,9 @@ function updatePowerupStatus(owner, powerupName, duration) {
 
 function getPowerupDescription(name) {
   const descriptions = {
-    uKnowReverse: "W goes Down and S goes up",
-    Megaform: "Your paddle hit the gym. Now it's SWOLE.",
+    //uKnowReverse: "W goes Down and S goes up",
+    Megaform: "The paddle hit the gym. Now it's SWOLE.",
     Downsize: "Management wants a smaller paddle",
-    invisibility: "Makes your paddle temporarily invisible to the opponent.",
-    "multi-ball": "Spawns two additional balls for chaos!",
   };
   return (
     descriptions[name] || "This power-up has special effects during gameplay."
@@ -263,84 +583,28 @@ function drawPowerUp(powerUp) {
 
       break;
 
-    case "uKnowReverse":
-      // Outer glowing orange rectangle
-      c.fillStyle = "#FF7700"; // Neon orange
-      c.shadowBlur = 12;
-      c.shadowColor = "#FF7700";
-      c.fillRect(x, y, size, size);
-      // Inner deep red rectangle
-      const reverseInnerSize = size * 0.6;
-      const reverseInnerX = x + (size - reverseInnerSize) / 2;
-      const reverseInnerY = y + (size - reverseInnerSize) / 2;
-      c.fillStyle = "#661100"; // Deep red for contrast
-      c.shadowBlur = 0;
-      c.fillRect(
-        reverseInnerX,
-        reverseInnerY,
-        reverseInnerSize,
-        reverseInnerSize
-      );
-      break;
-    
-    case "Aegis":
-        // Outer glowing indigo shield
-        c.fillStyle = "#6C00FF"; // Deep violet-indigo
-        c.shadowBlur = 15;
-        c.shadowColor = "#6C00FF";
-        c.fillRect(x, y, size, size);
-  
-        // Inner metallic silver hexagon
-        const centerX = x + size / 2;
-        const centerY = y + size / 2;
-        const radius = size * 0.3;
-  
-        c.beginPath();
-        for (let i = 0; i < 6; i++) {
-          const angle = Math.PI / 3 * i - Math.PI / 6;
-          const px = centerX + radius * Math.cos(angle);
-          const py = centerY + radius * Math.sin(angle);
-          if (i === 0) {
-            c.moveTo(px, py);
-          } else {
-            c.lineTo(px, py);
-          }
-        }
-        c.closePath();
-        c.fillStyle = "#C0C0C0"; // Metallic silver
-        c.shadowBlur = 0;
-        c.fill();
-        break;
-
-      
+    // case "uKnowReverse":
+    //   // Outer glowing orange rectangle
+    //   c.fillStyle = "#FF7700"; // Neon orange
+    //   c.shadowBlur = 12;
+    //   c.shadowColor = "#FF7700";
+    //   c.fillRect(x, y, size, size);
+    //   // Inner deep red rectangle
+    //   const reverseInnerSize = size * 0.6;
+    //   const reverseInnerX = x + (size - reverseInnerSize) / 2;
+    //   const reverseInnerY = y + (size - reverseInnerSize) / 2;
+    //   c.fillStyle = "#661100"; // Deep red for contrast
+    //   c.shadowBlur = 0;
+    //   c.fillRect(
+    //     reverseInnerX,
+    //     reverseInnerY,
+    //     reverseInnerSize,
+    //     reverseInnerSize
+    //   );
+    //   break;
   }
 }
 
-function drawShield(shield) {
-  if (!shield) return;
-
-  const fillSpeed = 10; // pixels per frame
-  if (!shield.fillHeight) shield.fillHeight = 0;
-
-  if (shield.fillHeight < shield.height) {
-    shield.fillHeight += fillSpeed;
-    if (shield.fillHeight > shield.height) {
-      shield.fillHeight = shield.height;
-    }
-  }
-
-  const fillY = shield.y + (shield.height / 2) - (shield.fillHeight / 2);
-
-  c.save();
-  c.shadowColor = SHIELD_COLOR;
-  c.shadowBlur = 20;
-  c.fillStyle = SHIELD_COLOR;
-
-  // Draw vertical fill inside shield boundary
-  c.fillRect(shield.x, fillY, shield.width, shield.fillHeight);
-
-  c.restore();
-}
 function drawBall(Ball) {
   if (
     !Ball ||
