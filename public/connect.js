@@ -567,6 +567,7 @@ function getPowerupDescription(name) {
     //uKnowReverse: "W goes Down and S goes up",
     Megaform: "The paddle hit the gym. Now it's SWOLE.",
     Downsize: "Management wants a smaller paddle",
+    uKnowReverse: "W goes down and S goes up",
   };
   return (
     descriptions[name] || "This power-up has special effects during gameplay."
@@ -631,25 +632,25 @@ function drawPowerUp(powerUp) {
 
       break;
 
-    // case "uKnowReverse":
-    //   // Outer glowing orange rectangle
-    //   c.fillStyle = "#FF7700"; // Neon orange
-    //   c.shadowBlur = 12;
-    //   c.shadowColor = "#FF7700";
-    //   c.fillRect(x, y, size, size);
-    //   // Inner deep red rectangle
-    //   const reverseInnerSize = size * 0.6;
-    //   const reverseInnerX = x + (size - reverseInnerSize) / 2;
-    //   const reverseInnerY = y + (size - reverseInnerSize) / 2;
-    //   c.fillStyle = "#661100"; // Deep red for contrast
-    //   c.shadowBlur = 0;
-    //   c.fillRect(
-    //     reverseInnerX,
-    //     reverseInnerY,
-    //     reverseInnerSize,
-    //     reverseInnerSize
-    //   );
-    //   break;
+    case "uKnowReverse":
+      // Outer glowing orange rectangle
+      c.fillStyle = "#FF7700"; // Neon orange
+      c.shadowBlur = 12;
+      c.shadowColor = "#FF7700";
+      c.fillRect(x, y, size, size);
+      // Inner deep red rectangle
+      const reverseInnerSize = size * 0.6;
+      const reverseInnerX = x + (size - reverseInnerSize) / 2;
+      const reverseInnerY = y + (size - reverseInnerSize) / 2;
+      c.fillStyle = "#661100"; // Deep red for contrast
+      c.shadowBlur = 0;
+      c.fillRect(
+        reverseInnerX,
+        reverseInnerY,
+        reverseInnerSize,
+        reverseInnerSize
+      );
+      break;
   }
 }
 
