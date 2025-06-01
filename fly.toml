@@ -17,9 +17,15 @@ primary_region = 'bom'
   min_machines_running = 1
   processes = ['app']
 
-# Enable WebSocket support
-[http_service.http_options]
-  h2_backend = true
+  # Explicit WebSocket configuration (handled by http_service)
+  [http_service.concurrency]
+    type = "connections"
+    soft_limit = 1000
+    hard_limit = 1000
+
+  [http_service.http_options]
+    h2_backend = true
+    response = { headers = { Connection = "keep-alive" } }
 
 # Static file serving for your public directory
 [[statics]]
@@ -34,3 +40,7 @@ primary_region = 'bom'
 # Environment variables (add any you need)
 [env]
   NODE_ENV = "production"
+  PORT = "8080" # Ensure PORT is set for your application
+  # Add these WebSocket-specific env vars if your server code uses them
+  # WS_KEEPALIVE_TIMEOUT = "60000"
+  # WS_PING_INTERVAL = "25000"

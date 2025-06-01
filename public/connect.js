@@ -31,7 +31,11 @@ const abandonMessage = document.getElementById('abandonMessage');
 const abandonReturnHomeButton = document.getElementById('abandonReturnHomeButton');
 
 
-const socket = io();
+// Initialize Socket.IO with production-ready settings
+const socket = io(SERVER_URL, {
+  transports: ['websocket']
+});
+
 if(!isGameOver)AudioManager.play("gameMusic");
 
 socket.on("connect", async () => {
