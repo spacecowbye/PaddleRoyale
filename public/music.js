@@ -40,5 +40,12 @@ const AudioManager = {
     } else {
       console.warn(`Sound "${soundName}" not found!`);
     }
+  },
+  cleanup: function() {
+    Object.keys(this).forEach(key => {
+      if (this[key] instanceof Howl) {
+        this[key].unload();
+      }
+    });
   }
 };

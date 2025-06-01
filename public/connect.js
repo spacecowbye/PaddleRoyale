@@ -24,7 +24,10 @@ const gameOverMessage = document.getElementById('gameOverMessage');
 const playAgainButton = document.getElementById('playAgainButton'); // Make sure these are defined
 const returnHomeButton = document.getElementById('returnHomeButton'); // Make sure these are defined
 
-
+const abandonModal = document.getElementById('abandonModal');
+const abandonTitle = document.getElementById('abandonTitle');
+const abandonMessage = document.getElementById('abandonMessage');
+const abandonReturnHomeButton = document.getElementById('abandonReturnHomeButton');
 
 
 const socket = io();
@@ -44,7 +47,7 @@ socket.on("connect", async () => {
   });
 
 socket.on("GameOver", (data) => {
-  const { winner, finalScore, player1SocketId, player2SocketId } = data; // Destructure player IDs from data
+  const { winner, finalScore} = data; // Destructure player IDs from data
   isGameOver = true; // Assuming 'isGameOver' is a global flag you use
 
   // It's good practice to ensure AudioManager exists and has the stop method
@@ -58,7 +61,7 @@ socket.on("GameOver", (data) => {
     }
   }
 
-  // Update the score display one final time to ensure it shows the final scores
+  // Update the score display
   if (finalScore) {
     document.getElementById("player1Score").textContent = finalScore.leftPlayerScore;
     document.getElementById("player2Score").textContent = finalScore.rightPlayerScore;
@@ -66,36 +69,30 @@ socket.on("GameOver", (data) => {
 
   // Determine who won from the client's perspective
   let winnerNameForDisplay;
-  if (socket.id === winner) { // 'winner' here is the socket ID of the winning player
-      winnerNameForDisplay = "You";
-      // Play game won sound only if 'AudioManager' is defined
-      if (typeof AudioManager !== 'undefined' && AudioManager.play) {
-        setTimeout(() => { 
-          AudioManager.play("gameEnd");
-        }, 653);
-      }
+  if (socket.id === winner) {
+    winnerNameForDisplay = "You";
+    if (typeof AudioManager !== 'undefined' && AudioManager.play) {
+      setTimeout(() => { 
+        AudioManager.play("gameEnd");
+      }, 653);
+    }
   } else {
-      winnerNameForDisplay = "Opponent";
-      
-      if (typeof AudioManager !== 'undefined' && AudioManager.play) {
-        setTimeout(() => {
-          
-          AudioManager.play("gameEnd"); 
-        }, 500);
-      }
+    winnerNameForDisplay = "Opponent";
+    if (typeof AudioManager !== 'undefined' && AudioManager.play) {
+      setTimeout(() => {
+        AudioManager.play("gameEnd"); 
+      }, 500);
+    }
   }
 
-  // Show the game over screen (the modal)
+  // Show the game over screen
   showGameOverScreen(winnerNameForDisplay);
 
-  // Optionally disconnect after a delay to let user see the final state
-  // Consider if you want to disconnect immediately or allow rejoining/play again.
-  // For 'Play Again', you might want to keep the socket alive or re-establish.
-  // For 'Return Home', disconnecting here makes sense.
-  // I recommend letting the "Return Home" button handle disconnect, not an automatic timeout.
-  // setTimeout(() => {
-  //   socket.disconnect();
-  // }, 3000);
+  // Clean up socket connection after delay
+  setTimeout(() => {
+    cleanupSocketEvents();
+    socket.disconnect();
+  }, 3000);
 });
 
 
@@ -315,37 +312,58 @@ function showNeonText(textContent, color) {
 
 
 
-
-// Call this when modal is closed to ensure canvas is clean
-function cleanupCelebration() {
-    celebrationActive = false;
-    celebrationParticles = [];
-    c.fillStyle = BACKGROUND_COLOR;
-    c.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    drawCenterLine();
-}
-
-// Add these event listeners if they are not already in your `connect.js`
-// Make sure to define 'socket' before this point (e.g., const socket = io();)
-// And define 'roomCode' if needed for a 'requestNewGame' event
-playAgainButton.addEventListener('click', () => {
+playAgainButton.addEventListener('click', async () => {
     if (gameOverModal) {
         gameOverModal.style.display = 'none'; // Hide the modal
     }
-    // You'd typically emit an event to the server to request a new game
-    // For example: socket.emit('requestNewGame', { roomCode: currentRoomCode });
-    // This is a placeholder for a client-side restart or going to home for now.
-    window.location.href = 'index.html'; // Or reload current game with new room logic
+    // Perform necessary cleanup before leaving
+    stopRenderLoop();
+    cleanupSocketEvents();
+    cleanupPowerupTimers();
+    if (typeof AudioManager !== 'undefined' && AudioManager.stop) {
+      AudioManager.stop("gameMusic");
+      AudioManager.stop("gameEnd");
+      if (typeof AudioManager.cleanup === 'function') {
+         AudioManager.cleanup();
+      }
+    }
+    if (socket && socket.connected) { // Only disconnect if connected
+        socket.disconnect();
+    }
+
+    // Request a new room from the server and redirect
+    try {
+        console.log("Requesting a new room...");
+        const response = await axios.post("http://localhost:8080/create-room");
+        const {roomCode} = response.data;
+        console.log("New room created:", roomCode);
+        window.location.replace(`http://localhost:8080/game.html?room=${roomCode}`);
+    } catch (error) {
+        console.error("Failed to create new room:", error);
+        // Fallback to going home or showing an error if creating a room fails
+        window.location.replace('index.html?error=failedToCreateRoom');
+    }
 });
 
 returnHomeButton.addEventListener('click', () => {
     if (gameOverModal) {
         gameOverModal.style.display = 'none'; // Hide the modal
     }
-    if (socket && socket.connected) { // Only disconnect if connected
+    // Perform necessary cleanup before leaving
+    stopRenderLoop();
+    cleanupSocketEvents();
+    cleanupPowerupTimers();
+    if (typeof AudioManager !== 'undefined' && AudioManager.stop) {
+      AudioManager.stop("gameMusic");
+      AudioManager.stop("gameEnd");
+       if (typeof AudioManager.cleanup === 'function') {
+         AudioManager.cleanup();
+      }
+    }
+    if (socket && socket.connected) {
         socket.disconnect();
     }
-    window.location.href = 'index.html'; // Navigate back to the home page
+    window.location.replace('index.html'); // Navigate back to the home page
 });
   socket.on("CountDownUpdate", (data) => {
     drawMessageToScreen(data);
@@ -383,14 +401,21 @@ returnHomeButton.addEventListener('click', () => {
     console.log(" Disconnected from WebSocket server");
   });
   socket.on("playerLeft", (data) => {
-  console.log(data);
-  //TODO :  show player left modal here
+  if (abandonModal) {
+    abandonModal.style.display = 'flex';
+    abandonModal.style.transform = 'scale(0.8)';
+    abandonModal.style.opacity = '0';
+    requestAnimationFrame(() => {
+      abandonModal.style.transition = 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
+      abandonModal.style.transform = 'scale(1)';
+      abandonModal.style.opacity = '1';
+    });
+  }
   stopRenderLoop();
   socket.disconnect();
-  drawMessageToScreen("Redirecting you back to Homepage..");
   setTimeout(() => {
-    window.location.href = `http://localhost:8080/index.html`;
-  }, 1500);
+    window.location.replace('http://localhost:8080/index.html');
+  }, 3000);
 });
 });
 
@@ -409,8 +434,7 @@ async function validateRoom(socketId) {
     } else {
       window.alert("Something Bad Happpened");
     }
-
-    window.location.href = `http://localhost:8080/`;
+    window.location.replace('http://localhost:8080/');
   }
 }
 function startRenderLoop() {
@@ -468,13 +492,37 @@ function renderGame(GameState) {
 }
 
 function stopRenderLoop() {
-  isGameRunning = false;
   if (animationId) {
     cancelAnimationFrame(animationId);
     animationId = null;
   }
-  currentGameState = null;
+  isGameRunning = false;
 }
+
+// Add cleanup function for socket events
+function cleanupSocketEvents() {
+  if (socket) {
+    socket.off("connect");
+    socket.off("youJoined");
+    socket.off("GameOver");
+    socket.off("CountDownUpdate");
+    socket.off("ScoreUpdate");
+    socket.off("GameUpdate");
+    socket.off("PowerUpTaken");
+    socket.off("PowerUpWoreOff");
+    socket.off("disconnect");
+    socket.off("playerLeft");
+  }
+}
+
+// Add cleanup function for power-up timers
+function cleanupPowerupTimers() {
+  if (countdown) {
+    clearInterval(countdown);
+    countdown = null;
+  }
+}
+
 function updatePowerupStatus(owner, powerupName, duration) {
   const powerupBox = document.getElementById("activePowerup");
   document.getElementById("powerupName").textContent = powerupName;
@@ -658,5 +706,17 @@ document.addEventListener("keyup", (event) => {
     event.key === "ArrowDown"
   ) {
     socket.emit("PADDLE_STOP");
+  }
+});
+
+// Add window unload handler
+window.addEventListener('beforeunload', () => {
+  stopRenderLoop();
+  cleanupSocketEvents();
+  cleanupPowerupTimers();
+  cleanupCelebration();
+  if (typeof AudioManager !== 'undefined' && AudioManager.stop) {
+    AudioManager.stop("gameMusic");
+    AudioManager.stop("gameEnd");
   }
 });

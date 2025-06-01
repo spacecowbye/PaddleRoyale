@@ -750,8 +750,6 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        background-color: rgba(0, 255, 255, 0.1);
-        box-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
         overflow: hidden; /* Ensures the image doesn't overflow the rounded corners */
       }
 
@@ -788,6 +786,31 @@
         border-color: #00ff00;
         box-shadow: 0 0 8px rgba(0, 255, 0, 0.5);
         color: #00ff00;
+      }
+
+      /* Styles for the Power-up Legend Icons */
+      .game-info-panel .powerup-legend .legend-item .icon {
+        width: 20px;
+        height: 20px;
+        margin-right: 10px;
+        flex-shrink: 0;
+        border: 2px solid #00E5FF; /* Default border for consistency */
+        box-sizing: border-box; /* Include border in element's total width and height */
+      }
+
+      .game-info-panel .powerup-legend .legend-item .icon.megaform {
+        background-color: #00E5FF; /* Filled color for Megaform */
+        border-color: #00E5FF; /* Ensure border color matches fill */
+      }
+
+      .game-info-panel .powerup-legend .legend-item .icon.downsize {
+        background-color: transparent; /* Transparent background for Downsize */
+        border-color: #00FF88; /* Green border for Downsize as seen in drawPowerUp */
+      }
+
+      /* Ensure descriptions are aligned */
+      .game-info-panel .powerup-legend .legend-item .description {
+        flex-grow: 1;
       }
     </style>
   </head>
@@ -844,8 +867,8 @@
         <div class="info-section">
           <h3>Game Rules</h3>
           <p>
-            Reach <strong>10</strong> points before your opponent to win! Each
-            paddle hit makes the ball move faster.
+            <strong>Reach <strong>10</strong> points before your opponent!</strong>
+             Each paddle hit makes the ball move faster.
           </p>
         </div>
 
@@ -872,7 +895,7 @@
               />
             </div>
             <div class="powerup-text">
-              <strong>Downsize</strong> Decrease the size of the opponent
+              <strong>Downsize:</strong> Decrease the size of the opponent
               paddle
             </div>
           </div>
@@ -890,6 +913,14 @@
           step="0.01"
           value="1"
         />
+      </div>
+    </div>
+
+    <!-- Game Abandonment Modal -->
+    <div id="abandonModal" class="modal">
+      <div class="modal-content">
+        <h2 id="abandonTitle">Opponent Left</h2>
+        <p id="abandonMessage">Redirecting you back to Homepage..</p>
       </div>
     </div>
 

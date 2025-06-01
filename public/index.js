@@ -82,17 +82,25 @@ submitButton.addEventListener('click', async() => {
     
     try {
         console.log("Sending join-room request with code:", roomCode);
-        window.location.href = `http://localhost:8080/game.html?room=${roomCode}`;
-
-      
+        // First validate the room exists
+        const response = await axios.post(`http://localhost:8080/join-room/${roomCode}`, {
+            socketId: 'pre-validate' // We'll get a real socket ID when we actually join
+        });
+        
+        // If we get here, the room exists and we can redirect
+        window.location.replace(`http://localhost:8080/game.html?room=${roomCode}`);
     } catch (error) {
         if(error.response){
-            showError("Invalid Room Code");
-        }
-        else if(error.request){
-             showError("No response from Server, please try later");
-        }
-        else{
+            if (error.response.status === 400) {
+                showError("No such room exists");
+            } else if (error.response.status === 403) {
+                showError("Room is full");
+            } else {
+                showError("Invalid Room Code");
+            }
+        } else if(error.request){
+            showError("No response from Server, please try later");
+        } else {
             showError("Request failed, please try later");
         }
     }
