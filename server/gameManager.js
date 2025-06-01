@@ -45,7 +45,7 @@ class GameManager {
     );
     this.PowerUp = null;
     //this.PowerUpTypes = ["Downsize", "Megaform", "uKnowReverse"]; // Store available power-ups
-    this.PowerUpTypes = ["Downsize", "Megaform"]; // Store available power-ups
+    this.PowerUpTypes = ["Downsize", "uKnowReverse"]; // Store available power-ups
 
     this.lastPowerUpType = null; // Track last generated type
     this.playerWithReversedControls = null;
@@ -297,15 +297,15 @@ updateScore(player) {
           opponentPaddle.length += 25;
           this.io.to(this.ROOM_CODE).emit("PowerUpWoreOff");
         }, powerUp.timeToLive);
-
-      // case "uKnowReverse":
-      //   this.playerWithReversedControls = opponentPlayer;
-      //   this.handlePowerupTimeout = setTimeout(() => {
-      //     this.playerWithReversedControls = null;
-      //     this.io.to(this.ROOM_CODE).emit("PowerUpWoreOff");
-      //   }, powerUp.timeToLive);
-      //   break;
-
+        break;
+      case "uKnowReverse":
+        this.playerWithReversedControls = opponentPlayer;
+        this.handlePowerupTimeout = setTimeout(() => {
+          this.playerWithReversedControls = null;
+          this.io.to(this.ROOM_CODE).emit("PowerUpWoreOff");
+        }, powerUp.timeToLive);
+        break;
+        
       default:
         console.log("Unknown power-up type:", powerUp.type);
     }

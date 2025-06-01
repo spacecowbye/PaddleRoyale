@@ -150,7 +150,9 @@ class GameSocketManager {
 
         // Remove the game room from active rooms
         this.rooms.delete(roomCode);
-        console.log("Active Rooms -> ", this.rooms);  
+        
+        
+        ("Active Rooms -> ", this.rooms);  
         console.log(`Room ${roomCode} deleted after player disconnection.`);
         
       });
