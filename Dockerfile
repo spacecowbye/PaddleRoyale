@@ -2,17 +2,17 @@ FROM node:23.11.0-alpine
 
 WORKDIR /app
 
-# Copy package.json and package-lock.json (if available)
-COPY package*.json ./
+# Copy package files from server directory
+COPY server/package*.json ./
 
 # Install dependencies
 RUN npm install
 
-# Copy the rest of the application code
-COPY . .
+# Copy server source code
+COPY server/ ./
 
-# Expose the port the app runs on
-EXPOSE 8080
+# Copy public files if needed by the server
+COPY public/ ./public/
 
-# Define the command to run the app
-CMD [ "npm", "start" ] 
+EXPOSE 3000
+CMD ["node", "server.js"]

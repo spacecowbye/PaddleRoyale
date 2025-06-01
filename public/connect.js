@@ -4,6 +4,7 @@ const CANVAS_HEIGHT = 404;
 canvas.width = CANVAS_WIDTH;
 canvas.height = CANVAS_HEIGHT;
 let c = canvas.getContext("2d");
+const SERVER_URL = "https://paddleroyale-winter-sky-6525.fly.dev";
 
 const BACKGROUND_COLOR = "#0A192F"; // Dark blue (Futuristic)
 const BALL_COLOR = "#FF3860"; // Neon red (High contrast)
@@ -334,10 +335,10 @@ playAgainButton.addEventListener('click', async () => {
     // Request a new room from the server and redirect
     try {
         console.log("Requesting a new room...");
-        const response = await axios.post("http://localhost:8080/create-room");
+        const response = await axios.post(`${SERVER_URL}/create-room`);
         const {roomCode} = response.data;
         console.log("New room created:", roomCode);
-        window.location.replace(`http://localhost:8080/game.html?room=${roomCode}`);
+        window.location.replace(`${SERVER_URL}/game.html?room=${roomCode}`);
     } catch (error) {
         console.error("Failed to create new room:", error);
         // Fallback to going home or showing an error if creating a room fails
@@ -424,7 +425,7 @@ async function validateRoom(socketId) {
     const URLparams = new URLSearchParams(window.location.search);
     const roomCode = URLparams.get("room");
     const response = await axios.post(
-      `http://localhost:8080/join-room/${roomCode}`,
+      `${SERVER_URL}/join-room/${roomCode}`,
       { socketId }
     );
     console.log(response.data);
@@ -434,7 +435,7 @@ async function validateRoom(socketId) {
     } else {
       window.alert("Something Bad Happpened");
     }
-    window.location.replace('http://localhost:8080/');
+    window.location.replace(`${SERVER_URL}/`);
   }
 }
 function startRenderLoop() {

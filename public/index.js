@@ -1,30 +1,31 @@
+// Configuration - Update this URL to your Fly.io app URL
+const SERVER_URL = "https://paddleroyale-winter-sky-6525.fly.dev";
+
 // global error modal manipulation
 function showError(message) {
     document.getElementById("roomCodeModal").style.display = "none";
     document.getElementById("errorMessage").innerText = message;
     document.getElementById("errorModal").style.display = "flex";
-  }
-  
-  function closeErrorModal() {
+}
+
+function closeErrorModal() {
     document.getElementById("errorModal").style.display = "none";
-  }
-  
+}
+
 document.getElementById("errorModal").addEventListener("click", function (event) {
     if (event.target === this) {
         closeErrorModal();
     }
 });
-  
-
 
 // Play button - Create new room
 document.querySelector('.play').addEventListener('click', async () => {
     console.log("Play button clicked");
 
     try {
-        const response = await axios.post("http://localhost:8080/create-room");
+        const response = await axios.post(`${SERVER_URL}/create-room`);
         const {roomCode} = response.data;        
-        window.location.href = `http://localhost:8080/game.html?room=${roomCode}`;
+        window.location.href = `${SERVER_URL}/game.html?room=${roomCode}`;
        
     } catch (error) {
         showError("No response from Server, please try later");
@@ -68,8 +69,6 @@ roomCodeInput.addEventListener("keydown", (event) => {
     }
 });
 
-
-
 // Submit room code
 submitButton.addEventListener('click', async() => {
     console.log("Submit button clicked");
@@ -83,12 +82,12 @@ submitButton.addEventListener('click', async() => {
     try {
         console.log("Sending join-room request with code:", roomCode);
         // First validate the room exists
-        const response = await axios.post(`http://localhost:8080/join-room/${roomCode}`, {
+        const response = await axios.post(`${SERVER_URL}/join-room/${roomCode}`, {
             socketId: 'pre-validate' // We'll get a real socket ID when we actually join
         });
         
         // If we get here, the room exists and we can redirect
-        window.location.replace(`http://localhost:8080/game.html?room=${roomCode}`);
+        window.location.replace(`${SERVER_URL}/game.html?room=${roomCode}`);
     } catch (error) {
         if(error.response){
             if (error.response.status === 400) {

@@ -1,0 +1,36 @@
+# fly.toml app configuration file generated for paddleroyale-winter-sky-6525 on 2025-06-01T14:15:38+05:30
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'paddleroyale-winter-sky-6525'
+primary_region = 'bom'
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'off'
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ['app']
+
+# Enable WebSocket support
+[http_service.http_options]
+  h2_backend = true
+
+# Static file serving for your public directory
+[[statics]]
+  guest_path = "/app/public"
+  url_prefix = "/"
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
+
+# Environment variables (add any you need)
+[env]
+  NODE_ENV = "production"
