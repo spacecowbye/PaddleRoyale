@@ -7,10 +7,16 @@ class GameSocketManager {
   constructor(server) {
     this.io = new Server(server, {
       cors: {
-        origin: "*",
+        origin: process.env.CLIENT_URL || "*",
         methods: ["GET", "POST"],
+        credentials: true
       },
-      transports: ["websocket", "polling"],
+      transports: ["websocket"],
+      pingTimeout: 60000,
+      pingInterval: 25000,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000
     });
     this.rooms = new Map();
     this.socketToRoom = new Map();
@@ -21,32 +27,60 @@ class GameSocketManager {
     this.io.on("connection", (socket) => {
       console.log("New socket connection made on ", socket.id);
       let room;
+      
+      // Handle reconnection
+      socket.on("reconnect_attempt", () => {
+        console.log(`Socket ${socket.id} attempting to reconnect`);
+      });
+
+      socket.on("reconnect", () => {
+        console.log(`Socket ${socket.id} reconnected`);
+        // Rejoin room if needed
+        const previousRoom = this.socketToRoom.get(socket.id);
+        if (previousRoom) {
+          socket.join(previousRoom.roomCode);
+        }
+      });
+
       socket.on("joinRoom", (roomCode) => {
-        room = RoomManager.getRoom(roomCode);
-        if (!room) {
-          return;
-        }
-        socket.join(roomCode);
+        try {
+          room = RoomManager.getRoom(roomCode);
+          if (!room) {
+            socket.emit("error", "Room not found");
+            return;
+          }
 
-        this.socketToRoom.set(socket.id, room);
-        socket.emit("youJoined", { playerId: socket.id, roomCode });
-        console.log(`${room.gameStatus} is the status of ${roomCode}`);
+          // Check if room is full
+          if (room.activePlayers >= room.maxPlayers) {
+            socket.emit("error", "Room is full");
+            return;
+          }
 
-        // Initialize GameManager when first player joins
-        if (!this.rooms.has(roomCode)) {
-          console.log(`Creating new GameManager for room ${roomCode}`);
-          const gameManager = new GameManager(roomCode, socket.id, this.io);
-          this.rooms.set(roomCode, gameManager);
-        } else {
-          // Add second player to existing GameManager
-          const gameManager = this.rooms.get(roomCode);
-          const playerId = socket.id;
-          gameManager.addPlayer(playerId);
-        }
+          socket.join(roomCode);
+          this.socketToRoom.set(socket.id, room);
+          socket.emit("youJoined", { playerId: socket.id, roomCode });
+          console.log(`${room.gameStatus} is the status of ${roomCode}`);
 
-        if (room.gameStatus === "Ready") {
-          console.log(`${roomCode} game is ready with ${room.players}`);
-          this.StartGameCountdown(room);
+          // Initialize GameManager when first player joins
+          if (!this.rooms.has(roomCode)) {
+            console.log(`Creating new GameManager for room ${roomCode}`);
+            const gameManager = new GameManager(roomCode, socket.id, this.io);
+            this.rooms.set(roomCode, gameManager);
+          } else {
+            // Add second player to existing GameManager
+            const gameManager = this.rooms.get(roomCode);
+            if (gameManager) {
+              gameManager.addPlayer(socket.id);
+            }
+          }
+
+          if (room.gameStatus === "Ready") {
+            console.log(`${roomCode} game is ready with ${room.players}`);
+            this.StartGameCountdown(room);
+          }
+        } catch (error) {
+          console.error("Error in joinRoom:", error);
+          socket.emit("error", "Failed to join room");
         }
       });
 
