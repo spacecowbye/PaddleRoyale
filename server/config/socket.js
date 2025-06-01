@@ -107,13 +107,28 @@ class GameSocketManager {
 
       socket.on("disconnect", () => {
         const room = this.socketToRoom.get(socket.id);
+
+        // Always clean up socketToRoom mapping
+        this.socketToRoom.delete(socket.id);
+
         if (!room) return;
 
         const roomCode = room.roomCode;
         const gameManager = this.rooms.get(roomCode);
+        
         if (!gameManager) return;
 
         console.log(`Socket ${socket.id} disconnected from ${roomCode}`);
+
+        // Clear countdown timers BEFORE calling destroy
+        if (gameManager.countdownInterval) {
+          clearInterval(gameManager.countdownInterval);
+          gameManager.countdownInterval = null;
+        }
+        if (gameManager.initialTimeout) {
+          clearTimeout(gameManager.initialTimeout);
+          gameManager.initialTimeout = null;
+        }
 
         // Notify the remaining player
         const opponentId =
@@ -125,6 +140,9 @@ class GameSocketManager {
           this.io
             .to(opponentId)
             .emit("playerLeft", "Your opponent has disconnected.");
+          
+          // Clean up opponent's socketToRoom mapping
+          this.socketToRoom.delete(opponentId);
         }
 
         // Stop the game and clean up
@@ -132,21 +150,31 @@ class GameSocketManager {
 
         // Remove the game room from active rooms
         this.rooms.delete(roomCode);
-        this.socketToRoom.delete(socket.id);
-
+        console.log("Active Rooms -> ", this.rooms);  
         console.log(`Room ${roomCode} deleted after player disconnection.`);
+        
       });
     });
   }
 
   StartGameCountdown(room) {
-    console.log("Inside Start Game Countdown");
-
     let roomCode = room.roomCode;
     this.io.to(roomCode).emit("CountDownUpdate", "May the best player Win");
     let countdown = 3;
-    setTimeout(() => {
+
+    const initialTimeout = setTimeout(() => {
+      // Double-check room still exists before starting countdown
+      if (!this.rooms.has(roomCode)) {
+        return;
+      }
+
       const countdownInterval = setInterval(() => {
+        // Check if room still exists (players might have left)
+        if (!this.rooms.has(roomCode)) {
+          clearInterval(countdownInterval);
+          return;
+        }
+
         this.io.to(roomCode).emit("CountDownUpdate", countdown);
         countdown--;
 
@@ -154,11 +182,25 @@ class GameSocketManager {
           clearInterval(countdownInterval);
           let gameManager = this.rooms.get(roomCode);
           if (gameManager) {
+            // Clear the reference since we're done with it
+            gameManager.countdownInterval = null;
             gameManager.setupGameLoop();
           }
         }
       }, 700);
+
+      // Store for cleanup on disconnect
+      const gameManager = this.rooms.get(roomCode);
+      if (gameManager) {
+        gameManager.countdownInterval = countdownInterval;
+      }
     }, 900);
+
+    // Store the timeout reference
+    const gameManager = this.rooms.get(roomCode);
+    if (gameManager) {
+      gameManager.initialTimeout = initialTimeout;
+    }
   }
 }
 

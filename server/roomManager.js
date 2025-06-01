@@ -32,7 +32,7 @@ class RoomManager {
         const roomCode = this.generateRoomCode();
         const room = new Room(roomCode);
         this.Rooms.set(roomCode,room);
-        console.log(this.Rooms.keys());
+        console.log(this.Rooms);
         return room;
     }
     joinRoom(roomCode, player) {

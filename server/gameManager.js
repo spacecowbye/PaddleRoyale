@@ -87,10 +87,6 @@ updateScore(player) {
     // Stop game loop instantly before ball moves again
     this.gamePaused = true;
 
-    setTimeout(() => {
-      this.destroy();
-    }, 2000);
-
     return;
   } else {
     // Only pause and reset ball if game isn't over

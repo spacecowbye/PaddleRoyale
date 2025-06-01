@@ -34,8 +34,7 @@ app.post("/create-room", (req, res) => {
 });
 
 app.post("/join-room/:roomCode", (req, res) => {
-  const {socketId} = req.body
-  const player = socketId;
+  const {socketId} = req.body;
   const { roomCode } = req.params;
   const room = roomManager.Rooms.get(roomCode);
   
@@ -45,8 +44,14 @@ app.post("/join-room/:roomCode", (req, res) => {
   if (room.activePlayers === room.maxPlayers) {
     return res.status(403).json({ error: "Room is full" });
   }
-  const updatedRoom = roomManager.joinRoom(roomCode, player);
 
+  // If this is just a pre-validation check (socketId is 'pre-validate')
+  if (socketId === 'pre-validate') {
+    return res.status(200).json({ message: "Room exists and is available" });
+  }
+
+  // Otherwise, proceed with actual room joining
+  const updatedRoom = roomManager.joinRoom(roomCode, socketId);
   if (!updatedRoom) {
     return res.status(500).json({ error: "Failed to join room" });
   }
