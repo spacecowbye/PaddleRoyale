@@ -28,6 +28,11 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, "../public")));
 app.use(cors());
 
+app.get('/', (req, res) => {
+  console.log('GET / request received, but express.static did not serve a file.');
+  res.send('<h1>Hello from Express! index.html not found by static middleware.</h1>');
+});
+
 app.post("/create-room", (req, res) => {
   const room = roomManager.createRoom();
   res.status(201).json(room);
