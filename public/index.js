@@ -1,5 +1,5 @@
 // Configuration - Update this URL to your Fly.io app URL
-const SERVER_URL = "https://paddleroyale-winter-sky-6525.fly.dev";
+const SERVER_URL = "https://light-victoria-spacecowbye-a97ce29b.koyeb.app";
 
 // global error modal manipulation
 function showError(message) {

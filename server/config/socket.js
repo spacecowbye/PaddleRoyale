@@ -152,8 +152,7 @@ class GameSocketManager {
         const roomCode = roomDisconnectedFrom.roomCode;
         const gameManager = this.rooms.get(roomCode);
 
-        // --- IMPORTANT: Handle player removal from the Room object directly ---
-        // Since Room.js doesn't have removePlayer, we'll manipulate the players array directly
+
         const playerIndex = roomDisconnectedFrom.players.indexOf(socket.id);
         if (playerIndex > -1) {
             roomDisconnectedFrom.players.splice(playerIndex, 1); // Remove player from Room.players

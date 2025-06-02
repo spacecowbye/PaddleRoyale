@@ -4,7 +4,7 @@ const CANVAS_HEIGHT = 404;
 canvas.width = CANVAS_WIDTH;
 canvas.height = CANVAS_HEIGHT;
 let c = canvas.getContext("2d");
-const SERVER_URL = "https://paddleroyale-winter-sky-6525.fly.dev";
+const SERVER_URL = "https://light-victoria-spacecowbye-a97ce29b.koyeb.app";
 
 const BACKGROUND_COLOR = "#0A192F"; // Dark blue (Futuristic)
 const BALL_COLOR = "#FF3860"; // Neon red (High contrast)
@@ -32,7 +32,7 @@ const abandonReturnHomeButton = document.getElementById('abandonReturnHomeButton
 
 
 // Initialize Socket.IO with production-ready settings
-const socket = io("wss://paddleroyale-winter-sky-6525.fly.dev");
+const socket = io("wss://light-victoria-spacecowbye-a97ce29b.koyeb.app/");
 
 if(!isGameOver)AudioManager.play("gameMusic");
 
