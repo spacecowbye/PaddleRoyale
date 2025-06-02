@@ -25,7 +25,7 @@ const gameSocketManager = new GameSocketManager(server);
 
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "../public")));
+app.use(express.static(path.join(__dirname, "../public"), { index: 'index.html' }));
 app.use(cors());
 
 app.get('/', (req, res) => {
