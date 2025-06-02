@@ -1,5 +1,5 @@
 // Configuration - Update this URL to your Fly.io app URL
-const SERVER_URL = "https://light-victoria-spacecowbye-a97ce29b.koyeb.app";
+const SERVER_URL = "https://polite-leticia-spacecowbye-452d654d.koyeb.app";
 
 // global error modal manipulation
 function showError(message) {

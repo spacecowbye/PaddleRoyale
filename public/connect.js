@@ -4,7 +4,7 @@ const CANVAS_HEIGHT = 404;
 canvas.width = CANVAS_WIDTH;
 canvas.height = CANVAS_HEIGHT;
 let c = canvas.getContext("2d");
-const SERVER_URL = "https://light-victoria-spacecowbye-a97ce29b.koyeb.app";
+const SERVER_URL = "polite-leticia-spacecowbye-452d654d.koyeb.app";
 
 const BACKGROUND_COLOR = "#0A192F"; // Dark blue (Futuristic)
 const BALL_COLOR = "#FF3860"; // Neon red (High contrast)
@@ -32,7 +32,7 @@ const abandonReturnHomeButton = document.getElementById('abandonReturnHomeButton
 
 
 // Initialize Socket.IO with production-ready settings
-const socket = io("wss://light-victoria-spacecowbye-a97ce29b.koyeb.app/");
+const socket = io("wss://polite-leticia-spacecowbye-452d654d.koyeb.app/");
 
 if(!isGameOver)AudioManager.play("gameMusic");
 
