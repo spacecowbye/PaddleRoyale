@@ -4,7 +4,7 @@ const CANVAS_HEIGHT = 404;
 canvas.width = CANVAS_WIDTH;
 canvas.height = CANVAS_HEIGHT;
 let c = canvas.getContext("2d");
-const SERVER_URL = "https://polite-leticia-spacecowbye-452d654d.koyeb.app/";
+const SERVER_URL = "https://polite-leticia-spacecowbye-452d654d.koyeb.app";
 
 const BACKGROUND_COLOR = "#0A192F"; // Dark blue (Futuristic)
 const BALL_COLOR = "#FF3860"; // Neon red (High contrast)
