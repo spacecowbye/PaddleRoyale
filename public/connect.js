@@ -4,7 +4,7 @@ const CANVAS_HEIGHT = 404;
 canvas.width = CANVAS_WIDTH;
 canvas.height = CANVAS_HEIGHT;
 let c = canvas.getContext("2d");
-const SERVER_URL = "https://polite-leticia-spacecowbye-452d654d.koyeb.app";
+const SERVER_URL = "https://polite-leticia-spacecowbye-452d654d.koyeb.app"; // Your Koyeb app URL
 
 const BACKGROUND_COLOR = "#0A192F"; // Dark blue (Futuristic)
 const BALL_COLOR = "#FF3860"; // Neon red (High contrast)
@@ -18,87 +18,177 @@ let isGameRunning = false;
 let isGameOver = false;
 let animationId = null;
 
-
 const gameOverModal = document.getElementById('gameOverModal');
 const gameOverTitle = document.getElementById('gameOverTitle');
 const gameOverMessage = document.getElementById('gameOverMessage');
-const playAgainButton = document.getElementById('playAgainButton'); // Make sure these are defined
-const returnHomeButton = document.getElementById('returnHomeButton'); // Make sure these are defined
+const playAgainButton = document.getElementById('playAgainButton');
+const returnHomeButton = document.getElementById('returnHomeButton');
 
 const abandonModal = document.getElementById('abandonModal');
 const abandonTitle = document.getElementById('abandonTitle');
 const abandonMessage = document.getElementById('abandonMessage');
 const abandonReturnHomeButton = document.getElementById('abandonReturnHomeButton');
 
+// --- CRITICAL CHANGE START ---
+// Get roomCode from URL parameters BEFORE initializing socket
+const URLparams = new URLSearchParams(window.location.search);
+const roomCode = URLparams.get("room");
 
-// Initialize Socket.IO with production-ready settings
-const socket = io("wss://polite-leticia-spacecowbye-452d654d.koyeb.app/");
+let socket = null; // Declare socket here, will be initialized conditionally
 
-if(!isGameOver)AudioManager.play("gameMusic");
+if (!roomCode) {
+    console.error("Room code is missing from the URL. Redirecting to home.");
+    alert("Room code is missing. Please join via a valid room link or create a new game.");
+    window.location.replace(`${SERVER_URL}`); // Redirect to home page
+} else {
+    // Initialize Socket.IO with the roomCode in the query
+    socket = io(SERVER_URL, {
+        query: {
+            room: roomCode // THIS IS THE KEY CHANGE
+        },
+        transports: ["websocket", "polling"], // Match your server settings
+    });
 
-socket.on("connect", async () => {
-  mySocket = socket.id;
-  console.log(" Connected to WebSocket server:", socket.id);
-  let socketId = socket.id;
-  await validateRoom(socketId);
-  const URLparams = new URLSearchParams(window.location.search);
-  const roomCode = URLparams.get("room");
-
-  socket.emit("joinRoom", roomCode);
-  socket.on("youJoined", (data) => {
-    console.log(data);
-  });
-
-socket.on("GameOver", (data) => {
-  const { winner, finalScore} = data; // Destructure player IDs from data
-  isGameOver = true; // Assuming 'isGameOver' is a global flag you use
-
-  // It's good practice to ensure AudioManager exists and has the stop method
-  if (typeof AudioManager !== 'undefined' && AudioManager.stop) {
-    AudioManager.stop("gameMusic");
-  } else {
-    console.warn("AudioManager.stop not found or not initialized.");
-    // Fallback for stopping all Howler sounds if AudioManager is custom or not ready
-    if (window.Howler) {
-      Howler.stop(); // Stop all sounds if AudioManager isn't working
+    if (!isGameOver && typeof AudioManager !== 'undefined' && AudioManager.play) {
+        AudioManager.play("gameMusic");
     }
-  }
 
-  // Update the score display
-  if (finalScore) {
-    document.getElementById("player1Score").textContent = finalScore.leftPlayerScore;
-    document.getElementById("player2Score").textContent = finalScore.rightPlayerScore;
-  }
+    // --- Socket Event Listeners ---
+    socket.on("connect", async () => {
+        mySocket = socket.id;
+        console.log("Connected to WebSocket server:", socket.id);
 
-  // Determine who won from the client's perspective
-  let winnerNameForDisplay;
-  if (socket.id === winner) {
-    winnerNameForDisplay = "You";
-    if (typeof AudioManager !== 'undefined' && AudioManager.play) {
-      setTimeout(() => { 
-        AudioManager.play("gameEnd");
-      }, 653);
-    }
-  } else {
-    winnerNameForDisplay = "Opponent";
-    if (typeof AudioManager !== 'undefined' && AudioManager.play) {
-      setTimeout(() => {
-        AudioManager.play("gameEnd"); 
-      }, 500);
-    }
-  }
+        // Your server-side GameSocketManager now handles joining the room based on the 'room' query parameter.
+        // So, `socket.emit("joinRoom", roomCode);` is no longer needed here.
+        // The `validateRoom` HTTP call is a pre-check, ensure it's robust.
+        await validateRoom(mySocket); // Still useful for initial HTTP validation
 
-  // Show the game over screen
-  showGameOverScreen(winnerNameForDisplay);
+        socket.on("youJoined", (data) => {
+            console.log("You joined room:", data);
+        });
 
-  // Clean up socket connection after delay
-  setTimeout(() => {
-    cleanupSocketEvents();
-    socket.disconnect();
-  }, 3000);
-});
+        socket.on("GameOver", (data) => {
+            const { winner, finalScore } = data;
+            isGameOver = true;
 
+            if (typeof AudioManager !== 'undefined' && AudioManager.stop) {
+                AudioManager.stop("gameMusic");
+            } else {
+                console.warn("AudioManager.stop not found or not initialized.");
+                if (window.Howler) { Howler.stop(); }
+            }
 
+            if (finalScore) {
+                document.getElementById("player1Score").textContent = finalScore.leftPlayerScore;
+                document.getElementById("player2Score").textContent = finalScore.rightPlayerScore;
+            }
+
+            let winnerNameForDisplay;
+            if (socket.id === winner) {
+                winnerNameForDisplay = "You";
+                if (typeof AudioManager !== 'undefined' && AudioManager.play) {
+                    setTimeout(() => { AudioManager.play("gameEnd"); }, 653);
+                }
+            } else {
+                winnerNameForDisplay = "Opponent";
+                if (typeof AudioManager !== 'undefined' && AudioManager.play) {
+                    setTimeout(() => { AudioManager.play("gameEnd"); }, 500);
+                }
+            }
+
+            showGameOverScreen(winnerNameForDisplay);
+
+            setTimeout(() => {
+                cleanupSocketEvents(); // Ensure all socket.off calls are made
+                if (socket && socket.connected) {
+                  socket.disconnect(); // Disconnect client socket
+                }
+            }, 3000);
+        });
+
+        socket.on("CountDownUpdate", (data) => {
+            drawMessageToScreen(data);
+        });
+
+        socket.on("ScoreUpdate", (data) => {
+            const { leftPlayerScore, rightPlayerScore } = data;
+            document.getElementById("player1Score").textContent = leftPlayerScore;
+            document.getElementById("player2Score").textContent = rightPlayerScore;
+        });
+
+        socket.on("GameUpdate", (GameState) => {
+            currentGameState = GameState;
+            if (!isGameRunning) {
+                isGameRunning = true;
+                startRenderLoop();
+            }
+        });
+
+        socket.on("PowerUpTaken", (data) => {
+            const { player, powerUpType, duration } = data;
+            console.log("PowerUpTaken - Duration:", duration, "Type:", typeof duration);
+            if (!isGameOver && typeof AudioManager !== 'undefined' && AudioManager.play) {
+                AudioManager.play("powerUpCollected");
+            }
+            let actual = socket.id === data.player ? "You" : "Opponent";
+            updatePowerupStatus(actual, powerUpType, duration);
+        });
+
+        socket.on("PowerUpWoreOff", () => {
+            console.log("Power-up wore off");
+            if (!isGameOver && typeof AudioManager !== 'undefined' && AudioManager.play) {
+                AudioManager.play("powerDown");
+            }
+        });
+
+        socket.on("disconnect", (reason) => {
+            console.log("Disconnected from WebSocket server:", reason);
+            // Handle specific disconnect reasons if needed
+            // e.g., if (reason === 'io server disconnect') { // forced by server }
+        });
+
+        socket.on("playerLeft", (data) => {
+            console.log("Opponent left:", data);
+            if (abandonModal) {
+                abandonModal.style.display = 'flex';
+                abandonModal.style.transform = 'scale(0.8)';
+                abandonModal.style.opacity = '0';
+                requestAnimationFrame(() => {
+                    abandonModal.style.transition = 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                    abandonModal.style.transform = 'scale(1)';
+                    abandonModal.style.opacity = '1';
+                });
+            }
+            stopRenderLoop();
+            if (socket && socket.connected) {
+                socket.disconnect();
+            }
+            setTimeout(() => {
+                window.location.replace(`${SERVER_URL}/index.html`);
+            }, 3000);
+        });
+
+        // Error handling for initial connection
+        socket.on("error", (message) => {
+            console.error("Socket error:", message);
+            alert(`Connection Error: ${message}`);
+            window.location.replace(`${SERVER_URL}`); // Redirect on critical error
+        });
+
+        socket.on("roomNotFound", (code) => {
+            console.error(`Room ${code} not found on server.`);
+            alert(`The room "${code}" does not exist or has ended.`);
+            window.location.replace(`${SERVER_URL}`);
+        });
+
+        socket.on("roomFull", (code) => {
+            console.warn(`Room ${code} is full.`);
+            alert(`The room "${code}" is full. Please try another room or create a new one.`);
+            window.location.replace(`${SERVER_URL}`);
+        });
+    });
+}
+// --- CRITICAL CHANGE END ---
 
 let celebrationParticles = [];
 let celebrationActive = false;
@@ -106,23 +196,23 @@ let celebrationStartTime = 0;
 
 function showGameOverScreen(winnerDisplayString) {
     console.log("Game over detected. Displaying modal with celebration.");
-    
+
     if (animationId) {
         cancelAnimationFrame(animationId);
     }
 
-  if (winnerDisplayString === "You") {
-    gameOverTitle.textContent = "YOU WON";
-    gameOverMessage.textContent = "Nicely done!";
-    startVictoryCelebration();
-} else if (winnerDisplayString === "Opponent") {
-    gameOverTitle.textContent = "YOU LOST";
-    gameOverMessage.textContent = "Better luck next time!";
-    startDefeatEffect();
-} else {
-    gameOverTitle.textContent = "Game Abandoned!";
-    gameOverMessage.textContent = "The game ended unexpectedly.";
-}
+    if (winnerDisplayString === "You") {
+        gameOverTitle.textContent = "YOU WON";
+        gameOverMessage.textContent = "Nicely done!";
+        startVictoryCelebration();
+    } else if (winnerDisplayString === "Opponent") {
+        gameOverTitle.textContent = "YOU LOST";
+        gameOverMessage.textContent = "Better luck next time!";
+        startDefeatEffect();
+    } else {
+        gameOverTitle.textContent = "Game Abandoned!";
+        gameOverMessage.textContent = "The game ended unexpectedly.";
+    }
 
     if (gameOverModal) {
         gameOverModal.style.display = 'flex';
@@ -312,165 +402,107 @@ function showNeonText(textContent, color) {
     }, 1800);
 }
 
+// Ensure playAgainButton and returnHomeButton are accessible, assuming they are in your HTML
+if (playAgainButton) {
+    playAgainButton.addEventListener('click', async () => {
+        if (gameOverModal) { gameOverModal.style.display = 'none'; }
+        stopRenderLoop();
+        cleanupSocketEvents();
+        cleanupPowerupTimers();
+        cleanupCelebration(); // Ensure this function exists or remove
+        if (typeof AudioManager !== 'undefined' && AudioManager.stop) {
+            AudioManager.stop("gameMusic");
+            AudioManager.stop("gameEnd");
+            if (typeof AudioManager.cleanup === 'function') { AudioManager.cleanup(); }
+        }
+        if (socket && socket.connected) { socket.disconnect(); }
 
-
-
-playAgainButton.addEventListener('click', async () => {
-    if (gameOverModal) {
-        gameOverModal.style.display = 'none'; // Hide the modal
-    }
-    // Perform necessary cleanup before leaving
-    stopRenderLoop();
-    cleanupSocketEvents();
-    cleanupPowerupTimers();
-    if (typeof AudioManager !== 'undefined' && AudioManager.stop) {
-      AudioManager.stop("gameMusic");
-      AudioManager.stop("gameEnd");
-      if (typeof AudioManager.cleanup === 'function') {
-         AudioManager.cleanup();
-      }
-    }
-    if (socket && socket.connected) { // Only disconnect if connected
-        socket.disconnect();
-    }
-
-    // Request a new room from the server and redirect
-    try {
-        console.log("Requesting a new room...");
-        const response = await axios.post(`${SERVER_URL}/create-room`);
-        const {roomCode} = response.data;
-        console.log("New room created:", roomCode);
-        window.location.replace(`${SERVER_URL}/game.html?room=${roomCode}`);
-    } catch (error) {
-        console.error("Failed to create new room:", error);
-        // Fallback to going home or showing an error if creating a room fails
-        window.location.replace('index.html?error=failedToCreateRoom');
-    }
-});
-
-returnHomeButton.addEventListener('click', () => {
-    if (gameOverModal) {
-        gameOverModal.style.display = 'none'; // Hide the modal
-    }
-    // Perform necessary cleanup before leaving
-    stopRenderLoop();
-    cleanupSocketEvents();
-    cleanupPowerupTimers();
-    if (typeof AudioManager !== 'undefined' && AudioManager.stop) {
-      AudioManager.stop("gameMusic");
-      AudioManager.stop("gameEnd");
-       if (typeof AudioManager.cleanup === 'function') {
-         AudioManager.cleanup();
-      }
-    }
-    if (socket && socket.connected) {
-        socket.disconnect();
-    }
-    window.location.replace('index.html'); // Navigate back to the home page
-});
-  socket.on("CountDownUpdate", (data) => {
-    drawMessageToScreen(data);
-  });
-  socket.on("ScoreUpdate", (data) => {
-    const { leftPlayerScore, rightPlayerScore } = data;
-
-    document.getElementById("player1Score").textContent = leftPlayerScore;
-    document.getElementById("player2Score").textContent = rightPlayerScore;
-  });
-
-  socket.on("GameUpdate", (GameState) => {
-    currentGameState = GameState;
-
-    // Start the render loop if it's not already running
-    if (!isGameRunning) {
-      isGameRunning = true;
-      startRenderLoop();
-    }
-  });
-
-  socket.on("PowerUpTaken", (data) => {
-    const { player, powerUpType, duration } = data;
-    console.log("Duration value:", duration, "Type:", typeof duration); // Debug line
-    if(!isGameOver)AudioManager.play("powerUpCollected");
-    let actual = socket.id === data.player ? "You" : "Opponent";
-    updatePowerupStatus(actual, powerUpType, duration);
-  });
-
-  socket.on("PowerUpWoreOff", () => {
-    console.log("power up wore off");
-    if(!isGameOver)AudioManager.play("powerDown");
-  });
-  socket.on("disconnect", () => {
-    console.log(" Disconnected from WebSocket server");
-  });
-  socket.on("playerLeft", (data) => {
-  if (abandonModal) {
-    abandonModal.style.display = 'flex';
-    abandonModal.style.transform = 'scale(0.8)';
-    abandonModal.style.opacity = '0';
-    requestAnimationFrame(() => {
-      abandonModal.style.transition = 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
-      abandonModal.style.transform = 'scale(1)';
-      abandonModal.style.opacity = '1';
+        try {
+            console.log("Requesting a new room for play again...");
+            const response = await axios.post(`${SERVER_URL}/create-room`);
+            const { roomCode: newRoomCode } = response.data; // Renamed to newRoomCode to avoid conflict
+            console.log("New room created:", newRoomCode);
+            window.location.replace(`${SERVER_URL}/game.html?room=${newRoomCode}`);
+        } catch (error) {
+            console.error("Failed to create new room:", error);
+            alert("Failed to create a new room. Please try again.");
+            window.location.replace(`${SERVER_URL}`);
+        }
     });
-  }
-  stopRenderLoop();
-  socket.disconnect();
-  setTimeout(() => {
-    window.location.replace(`${SERVER_URL}/index.html`);
-  }, 3000);
-});
-});
+}
+
+if (returnHomeButton) {
+    returnHomeButton.addEventListener('click', () => {
+        if (gameOverModal) { gameOverModal.style.display = 'none'; }
+        stopRenderLoop();
+        cleanupSocketEvents();
+        cleanupPowerupTimers();
+        cleanupCelebration(); // Ensure this function exists or remove
+        if (typeof AudioManager !== 'undefined' && AudioManager.stop) {
+            AudioManager.stop("gameMusic");
+            AudioManager.stop("gameEnd");
+            if (typeof AudioManager.cleanup === 'function') { AudioManager.cleanup(); }
+        }
+        if (socket && socket.connected) { socket.disconnect(); }
+        window.location.replace(`${SERVER_URL}`); // Use SERVER_URL for consistency
+    });
+}
+
+if (abandonReturnHomeButton) { // Assuming this button exists
+    abandonReturnHomeButton.addEventListener('click', () => {
+        if (abandonModal) { abandonModal.style.display = 'none'; }
+        stopRenderLoop();
+        cleanupSocketEvents();
+        cleanupPowerupTimers();
+        cleanupCelebration();
+        if (typeof AudioManager !== 'undefined' && AudioManager.stop) {
+            AudioManager.stop("gameMusic");
+            AudioManager.stop("gameEnd");
+            if (typeof AudioManager.cleanup === 'function') { AudioManager.cleanup(); }
+        }
+        if (socket && socket.connected) { socket.disconnect(); }
+        window.location.replace(`${SERVER_URL}`);
+    });
+}
+
 
 async function validateRoom(socketId) {
   try {
-    const URLparams = new URLSearchParams(window.location.search);
-    const roomCode = URLparams.get("room");
+    // roomCode is already obtained globally at the top
     const response = await axios.post(
       `${SERVER_URL}/join-room/${roomCode}`,
-      { socketId }
+      { socketId } // Sending socketId here as a pre-validation
     );
-    console.log(response.data);
+    console.log("Room HTTP validation successful:", response.data);
   } catch (err) {
+    console.error("HTTP Room validation failed:", err);
+    let errorMessage = "Something Bad Happened";
     if (err.response && err.response.data && err.response.data.error) {
-      window.alert(err.response.data.error);
-    } else {
-      window.alert("Something Bad Happpened");
+      errorMessage = err.response.data.error;
     }
+    window.alert(errorMessage);
     window.location.replace(`${SERVER_URL}`);
   }
 }
+
 function startRenderLoop() {
   function render() {
     if (isGameRunning && currentGameState) {
-      // Clear and render the current game state
       renderGame(currentGameState);
     }
-
-    // Continue the loop
     animationId = requestAnimationFrame(render);
   }
-
-  // Start the loop
   animationId = requestAnimationFrame(render);
 }
 
 function renderGame(GameState) {
   c.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-  // Draw background first
   c.fillStyle = BACKGROUND_COLOR;
   c.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
   createDashedLine();
 
-  // Draw the ball only if valid
   const { Ball, Paddle1, Paddle2, PowerUp } = GameState;
-  if (
-    Ball &&
-    Ball.x !== undefined &&
-    Ball.y !== undefined &&
-    Ball.radius !== undefined
-  ) {
+  if (Ball && Ball.x !== undefined && Ball.y !== undefined && Ball.radius !== undefined) {
     drawBall(Ball);
   }
 
@@ -484,7 +516,7 @@ function renderGame(GameState) {
   }
 
   if (myPaddle) {
-    drawPaddle(myPaddle, true);
+    drawPaddle(myPaddle, true); // `isMyPaddle` can be used for styling/logic if needed
   }
   if (opponentPaddle) {
     drawPaddle(opponentPaddle, false);
@@ -502,7 +534,6 @@ function stopRenderLoop() {
   isGameRunning = false;
 }
 
-// Add cleanup function for socket events
 function cleanupSocketEvents() {
   if (socket) {
     socket.off("connect");
@@ -515,16 +546,27 @@ function cleanupSocketEvents() {
     socket.off("PowerUpWoreOff");
     socket.off("disconnect");
     socket.off("playerLeft");
+    socket.off("error"); // Added error event handler cleanup
+    socket.off("roomNotFound"); // Added roomNotFound cleanup
+    socket.off("roomFull"); // Added roomFull cleanup
   }
 }
 
-// Add cleanup function for power-up timers
 function cleanupPowerupTimers() {
   if (countdown) {
     clearInterval(countdown);
     countdown = null;
   }
 }
+
+// You might need a cleanupCelebration function if it manages persistent elements
+function cleanupCelebration() {
+    celebrationActive = false;
+    celebrationParticles = [];
+    // If you add dynamically created elements for neon text, remove them here
+    document.querySelectorAll('.neon-text').forEach(el => el.remove());
+}
+
 
 function updatePowerupStatus(owner, powerupName, duration) {
   const powerupBox = document.getElementById("activePowerup");
@@ -539,19 +581,12 @@ function updatePowerupStatus(owner, powerupName, duration) {
   document.getElementById("powerupDescription").textContent =
     getPowerupDescription(powerupName);
 
-  // Add validation for duration
-  let remaining = Math.floor(Number(duration)) || 0; // Ensure it's a number
-  document.getElementById(
-    "powerupTimer"
-  ).textContent = `${remaining}s remaining`;
+  let remaining = Math.floor(Number(duration)) || 0;
+  document.getElementById("powerupTimer").textContent = `${remaining}s remaining`;
 
   powerupBox.classList.add("powerup-active");
 
-  // Start countdown only if duration is valid
-  if (countdown) {
-    clearInterval(countdown);
-    countdown = null;
-  }
+  if (countdown) { clearInterval(countdown); countdown = null; }
   if (remaining > 0) {
     const timerElement = document.getElementById("powerupTimer");
     countdown = setInterval(() => {
@@ -567,7 +602,6 @@ function updatePowerupStatus(owner, powerupName, duration) {
 
 function getPowerupDescription(name) {
   const descriptions = {
-    //uKnowReverse: "W goes Down and S goes up",
     Megaform: "The paddle hit the gym. Now it's SWOLE.",
     Downsize: "Management wants a smaller paddle",
     uKnowReverse: "W goes down and S goes up",
@@ -594,18 +628,16 @@ function drawPaddle(Paddle) {
 
 function drawPowerUp(powerUp) {
   if (!powerUp) return;
-  const size = powerUp.width; // Fixed size (24x24)
+  const size = powerUp.width;
   const x = powerUp.x;
   const y = powerUp.y;
   const type = powerUp.type;
   switch (type) {
     case "Megaform":
-      // Outer glowing cyan rectangle
       c.fillStyle = "#00E5FF";
       c.shadowBlur = 10;
       c.shadowColor = "#00E5FF";
       c.fillRect(x, y, size, size);
-      // Inner white rectangle
       const innerSize = size * 0.5;
       const innerX = x + (size - innerSize) / 2;
       const innerY = y + (size - innerSize) / 2;
@@ -613,59 +645,35 @@ function drawPowerUp(powerUp) {
       c.shadowBlur = 0;
       c.fillRect(innerX, innerY, innerSize, innerSize);
       break;
-
     case "Downsize":
-      // Outer glowing green rectangle
       c.fillStyle = "#00FF88";
       c.shadowBlur = 12;
       c.shadowColor = "#00FF88";
       c.fillRect(x, y, size, size);
-      // Inner black rectangle
       const downsizeInnerSize = size * 0.6;
       const downsizeInnerX = x + (size - downsizeInnerSize) / 2;
       const downsizeInnerY = y + (size - downsizeInnerSize) / 2;
       c.fillStyle = "black";
       c.shadowBlur = 0;
-      c.fillRect(
-        downsizeInnerX,
-        downsizeInnerY,
-        downsizeInnerSize,
-        downsizeInnerSize
-      );
-
+      c.fillRect(downsizeInnerX, downsizeInnerY, downsizeInnerSize, downsizeInnerSize);
       break;
-
     case "uKnowReverse":
-      // Outer glowing orange rectangle
-      c.fillStyle = "#FF7700"; // Neon orange
+      c.fillStyle = "#FF7700";
       c.shadowBlur = 12;
       c.shadowColor = "#FF7700";
       c.fillRect(x, y, size, size);
-      // Inner deep red rectangle
       const reverseInnerSize = size * 0.6;
       const reverseInnerX = x + (size - reverseInnerSize) / 2;
       const reverseInnerY = y + (size - reverseInnerSize) / 2;
-      c.fillStyle = "#661100"; // Deep red for contrast
+      c.fillStyle = "#661100";
       c.shadowBlur = 0;
-      c.fillRect(
-        reverseInnerX,
-        reverseInnerY,
-        reverseInnerSize,
-        reverseInnerSize
-      );
+      c.fillRect(reverseInnerX, reverseInnerY, reverseInnerSize, reverseInnerSize);
       break;
   }
 }
 
 function drawBall(Ball) {
-  if (
-    !Ball ||
-    Ball.x === undefined ||
-    Ball.y === undefined ||
-    Ball.radius === undefined
-  ) {
-    return;
-  }
+  if (!Ball || Ball.x === undefined || Ball.y === undefined || Ball.radius === undefined) { return; }
   c.beginPath();
   c.arc(Ball.x, Ball.y, Ball.radius, 0, Math.PI * 2);
   c.fillStyle = BALL_COLOR;
@@ -692,28 +700,29 @@ function createDashedLine() {
   c.lineWidth = 5;
   c.stroke();
 }
+
 document.addEventListener("keydown", (event) => {
-  if (event.key === "w" || event.key === "W" || event.key === "ArrowUp") {
-    socket.emit("PADDLE_UP");
-  }
-  if (event.key === "s" || event.key === "S" || event.key === "ArrowDown") {
-    socket.emit("PADDLE_DOWN");
-  }
-});
-document.addEventListener("keyup", (event) => {
-  if (
-    event.key === "w" ||
-    event.key === "W" ||
-    event.key === "ArrowUp" ||
-    event.key === "s" ||
-    event.key === "S" ||
-    event.key === "ArrowDown"
-  ) {
-    socket.emit("PADDLE_STOP");
+  if (socket && socket.connected) { // Only emit if socket is connected
+    if (event.key === "w" || event.key === "W" || event.key === "ArrowUp") {
+      socket.emit("PADDLE_UP");
+    }
+    if (event.key === "s" || event.key === "S" || event.key === "ArrowDown") {
+      socket.emit("PADDLE_DOWN");
+    }
   }
 });
 
-// Add window unload handler
+document.addEventListener("keyup", (event) => {
+  if (socket && socket.connected) { // Only emit if socket is connected
+    if (
+      event.key === "w" || event.key === "W" || event.key === "ArrowUp" ||
+      event.key === "s" || event.key === "S" || event.key === "ArrowDown"
+    ) {
+      socket.emit("PADDLE_STOP");
+    }
+  }
+});
+
 window.addEventListener('beforeunload', () => {
   stopRenderLoop();
   cleanupSocketEvents();
@@ -722,5 +731,9 @@ window.addEventListener('beforeunload', () => {
   if (typeof AudioManager !== 'undefined' && AudioManager.stop) {
     AudioManager.stop("gameMusic");
     AudioManager.stop("gameEnd");
+  }
+  // Ensure socket disconnects cleanly on page unload
+  if (socket && socket.connected) {
+    socket.disconnect();
   }
 });
