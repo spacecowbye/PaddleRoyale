@@ -44,7 +44,7 @@ const gameSocketManager = new GameSocketManager(server); // This is a common pla
 
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "../public"), { index: 'index.html' }));
+app.use(express.static(path.join(__dirname, "public"), { index: 'index.html' }));
 app.use(cors());
 
 
