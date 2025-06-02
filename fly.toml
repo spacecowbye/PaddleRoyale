@@ -1,4 +1,4 @@
-# fly.toml app configuration file generated for paddleroyale-winter-sky-6525 on 2025-06-01T14:15:38+05:30
+# fly.toml app configuration file generated for paddleroyale-winter-sky-6525 on 2025-06-01T20:59:09+05:30
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
@@ -7,7 +7,11 @@ app = 'paddleroyale-winter-sky-6525'
 primary_region = 'bom'
 
 [build]
-  dockerfile = "Dockerfile"
+  dockerfile = 'Dockerfile'
+
+[env]
+  NODE_ENV = 'production'
+  PORT = '8080'
 
 [http_service]
   internal_port = 8080
@@ -15,32 +19,26 @@ primary_region = 'bom'
   auto_stop_machines = 'off'
   auto_start_machines = true
   min_machines_running = 1
+  max_machines_running = 1
   processes = ['app']
 
-  # Explicit WebSocket configuration (handled by http_service)
   [http_service.concurrency]
-    type = "connections"
-    soft_limit = 1000
+    type = 'connections'
     hard_limit = 1000
+    soft_limit = 1000
 
   [http_service.http_options]
     h2_backend = true
-    response = { headers = { Connection = "keep-alive" } }
 
-# Static file serving for your public directory
-[[statics]]
-  guest_path = "/app/public"
-  url_prefix = "/"
+    [http_service.http_options.response]
+      [http_service.http_options.response.headers]
+        Connection = 'keep-alive'
 
 [[vm]]
   memory = '1gb'
   cpu_kind = 'shared'
   cpus = 1
 
-# Environment variables (add any you need)
-[env]
-  NODE_ENV = "production"
-  PORT = "8080" # Ensure PORT is set for your application
-  # Add these WebSocket-specific env vars if your server code uses them
-  # WS_KEEPALIVE_TIMEOUT = "60000"
-  # WS_PING_INTERVAL = "25000"
+[[statics]]
+  guest_path = '/app/public'
+  url_prefix = '/'

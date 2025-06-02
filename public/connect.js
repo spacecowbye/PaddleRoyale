@@ -32,9 +32,7 @@ const abandonReturnHomeButton = document.getElementById('abandonReturnHomeButton
 
 
 // Initialize Socket.IO with production-ready settings
-const socket = io(SERVER_URL, {
-  transports: ['websocket']
-});
+const socket = io("wss://paddleroyale-winter-sky-6525.fly.dev");
 
 if(!isGameOver)AudioManager.play("gameMusic");
 

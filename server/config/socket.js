@@ -1,306 +1,297 @@
 const { Server } = require("socket.io");
-const RoomManager = require("../roomManager");
+const RoomManager = require("../roomManager"); // Singleton instance
 const GameManager = require("../gameManager");
-const Room = require("../models/Room");
- 
-const SERVER_URL = "https://paddleroyale-winter-sky-6525.fly.dev";
+// const Room = require("../models/Room"); // Not directly used in GameSocketManager, used by RoomManager
+
 class GameSocketManager {
   constructor(server) {
     this.io = new Server(server, {
       cors: {
-        origin: "https://paddleroyale-winter-sky-6525.fly.dev", // Just the HTTPS origin
+        origin: "*", // Consider replacing '*' with your Fly.io app domain in production
         methods: ["GET", "POST"],
-        credentials: true
       },
-      transports: ["websocket", "polling"],
-      path: "/socket.io/", // Explicitly set the path
-      pingTimeout: 60000,
-      pingInterval: 25000,
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-      // Additional production-ready settings:
-      allowEIO3: true, // For backwards compatibility
-      cookie: {
-        name: "io",
-        path: "/",
-        httpOnly: true,
-        sameSite: "lax"
-      }
+      transports: ["websocket", "polling"], // Explicitly define transports
     });
-    this.rooms = new Map();
-    this.socketToRoom = new Map();
+    this.rooms = new Map(); // Stores GameManager instances per roomCode
+    this.socketToRoom = new Map(); // Maps socket.id to the Room object (from RoomManager.Rooms)
+
     this.setupSocketEvents();
   }
- 
+
   setupSocketEvents() {
     this.io.on("connection", (socket) => {
-      console.log("New socket connection made on ", socket.id);
-      let room;
- 
-      // Handle reconnection
-      socket.on("reconnect_attempt", () => {
-        console.log(`Socket ${socket.id} attempting to reconnect`);
-      });
- 
-      socket.on("reconnect", () => {
-        console.log(`Socket ${socket.id} reconnected`);
-        // Rejoin room if needed
-        const previousRoom = this.socketToRoom.get(socket.id);
-        if (previousRoom) {
-          socket.join(previousRoom.roomCode);
+      console.log(`[Socket Connected] New socket ID: ${socket.id}`);
+
+      // --- CRITICAL: Extract roomCode from initial handshake query ---
+      const roomCode = socket.handshake.query.room;
+
+      if (!roomCode) {
+        console.warn(`[Socket ${socket.id}] Connected without a roomCode. Disconnecting.`);
+        socket.emit("error", "Room code is missing. Please join via a valid room link.");
+        socket.disconnect(true); // Disconnect immediately if no room code
+        return;
+      }
+
+      console.log(`[Socket ${socket.id}] Attempting to join room: ${roomCode}`);
+
+      // Get the room object from RoomManager
+      const room = RoomManager.getRoom(roomCode);
+      if (!room) {
+        console.warn(`[Socket ${socket.id}] Room ${roomCode} not found in RoomManager. Disconnecting.`);
+        socket.emit("roomNotFound", roomCode); // Inform client that room doesn't exist
+        socket.disconnect(true); // Disconnect if the room doesn't exist
+        return;
+      }
+
+      // Check if room is already full *before* adding player via socket
+      // Your RoomManager.joinRoom handles activePlayers, but we also check here for socket connection
+      if (room.activePlayers >= room.maxPlayers) {
+        console.warn(`[Socket ${socket.id}] Room ${roomCode} is full. Disconnecting.`);
+        socket.emit("roomFull", roomCode); // Inform client that room is full
+        socket.disconnect(true);
+        return;
+      }
+
+      // If RoomManager.joinRoom (HTTP API) has already added the player ID,
+      // we need to ensure we don't double-add here.
+      // Assuming 'socket.id' is the 'player' identifier.
+      if (!room.players.includes(socket.id)) {
+        // Only add if not already present (e.g., if direct socket connection without HTTP join)
+        // Note: Your Room.addPlayer handles this length check, but adding it here for clarity
+        if (room.players.length < room.maxPlayers) {
+             room.addPlayer(socket.id); // Update the Room object's player list and activePlayers count
+             console.log(`[Socket ${socket.id}] Added to RoomManager's room ${roomCode}. Players: ${room.players.length}`);
+        } else {
+             // This branch should ideally not be reached if the activePlayers check above is correct
+             console.warn(`[Socket ${socket.id}] Tried to add to full room ${roomCode}.`);
+             socket.emit("roomFull", roomCode);
+             socket.disconnect(true);
+             return;
         }
-      });
- 
-      socket.on("joinRoom", (roomCode) => {
-        try {
-          console.log(`Socket ${socket.id} attempting to join room: ${roomCode}`);
-          room = RoomManager.getRoom(roomCode);
-          if (!room) {
-            console.warn(`Room ${roomCode} not found for socket ${socket.id}`);
-            socket.emit("error", "Room not found");
-            return;
-          }
- 
-          // Check if room is full
-          if (room.activePlayers >= room.maxPlayers) {
-            console.warn(`Room ${roomCode} is full. Socket ${socket.id} cannot join.`);
-            socket.emit("error", "Room is full");
-            return;
-          }
- 
-          socket.join(roomCode);
-          this.socketToRoom.set(socket.id, room);
-          socket.emit("youJoined", { playerId: socket.id, roomCode });
-          console.log(`Socket ${socket.id} successfully joined room: ${roomCode}`);
-          console.log(`Room ${roomCode} game status: ${room.gameStatus}`);
- 
-          // Initialize GameManager when first player joins
-          if (!this.rooms.has(roomCode)) {
-            console.log(`Creating new GameManager for room ${roomCode} with player ${socket.id}`);
-            const gameManager = new GameManager(roomCode, socket.id, this.io);
-            this.rooms.set(roomCode, gameManager);
-          } else {
-            // Add second player to existing GameManager
-            const gameManager = this.rooms.get(roomCode);
-            if (gameManager) {
-              console.log(`Adding second player ${socket.id} to existing GameManager for room ${roomCode}`);
-              gameManager.addPlayer(socket.id);
-            } else {
-               console.error(`GameManager not found for existing room ${roomCode} when adding second player ${socket.id}`);
-               socket.emit("error", "Internal server error: GameManager not found");
-            }
-          }
- 
-          if (room.gameStatus === "Ready") {
-            console.log(`Room ${roomCode} game is ready with players: ${room.players}`);
-            this.StartGameCountdown(room);
-          }
-        } catch (error) {
-          console.error(`Error in joinRoom for socket ${socket.id} and room ${roomCode}:`, error);
-          socket.emit("error", "Failed to join room");
-        }
-      });
- 
-      // Register paddle movement events for all connected sockets
+      } else {
+          console.log(`[Socket ${socket.id}] Already recorded in RoomManager's room ${roomCode}.`);
+      }
+      
+      // Join the socket to the socket.io room
+      socket.join(roomCode);
+      this.socketToRoom.set(socket.id, room); // Map socket.id to the Room object
+      console.log(`[Socket ${socket.id}] Successfully joined Socket.IO room: ${roomCode}`);
+      socket.emit("youJoined", { playerId: socket.id, roomCode }); // Inform the client they've joined
+
+      // --- Handle GameManager initialization/player addition ---
+      let gameManager = this.rooms.get(roomCode);
+
+      if (!gameManager) {
+        console.log(`[Room ${roomCode}] Creating new GameManager for room.`);
+        gameManager = new GameManager(roomCode, socket.id, this.io);
+        this.rooms.set(roomCode, gameManager);
+      } else {
+        // This path is for the second player joining an existing GameManager
+        console.log(`[Room ${roomCode}] Adding player ${socket.id} to existing GameManager.`);
+        gameManager.addPlayer(socket.id); // Add to GameManager's internal player list
+      }
+      
+      console.log(`[Room ${roomCode}] Game status: ${room.gameStatus}, Current active players in RoomManager: ${room.activePlayers}`);
+
+      // Start countdown if room is ready
+      if (room.gameStatus === "Ready") { // This status is set by Room.addPlayer when players.length becomes 2
+        console.log(`[Room ${roomCode}] Game is ready. Starting countdown.`);
+        this.StartGameCountdown(room);
+      }
+
+      // --- Paddle Movement Events ---
       socket.on("PADDLE_UP", () => {
-        try {
-          const room = this.socketToRoom.get(socket.id);
-          if (!room) {
-            console.warn(`PADDLE_UP received from socket ${socket.id} but no room found in socketToRoom map.`);
-            return;
-          }
-          const roomCode = room.roomCode;
-          if (!roomCode) {
-             console.warn(`PADDLE_UP received from socket ${socket.id} but roomCode is missing.`);
-             return;
-          }
- 
-          const gameManager = this.rooms.get(roomCode);
-          if (!gameManager) {
-             console.warn(`PADDLE_UP received from socket ${socket.id} for room ${roomCode} but GameManager not found.`);
-             return;
-          }
- 
-          let object = {
-            movePaddleUp: true,
-            movePaddleDown: false,
-          };
-          gameManager.updatePaddle(socket.id, object);
-          // console.log(`PADDLE_UP for socket ${socket.id} in room ${roomCode}`); // Optional: log every paddle move (can be noisy)
-        } catch (error) {
-           console.error(`Error handling PADDLE_UP for socket ${socket.id}:`, error);
-        }
+        const currentRoom = this.socketToRoom.get(socket.id);
+        if (!currentRoom) return; // Should not happen if socketToRoom is managed correctly
+        const gameManagerInstance = this.rooms.get(currentRoom.roomCode);
+        if (!gameManagerInstance) return;
+
+        gameManagerInstance.updatePaddle(socket.id, {
+          movePaddleUp: true,
+          movePaddleDown: false,
+        });
       });
- 
+
       socket.on("PADDLE_DOWN", () => {
-        try {
-          const room = this.socketToRoom.get(socket.id);
-          if (!room) {
-            console.warn(`PADDLE_DOWN received from socket ${socket.id} but no room found in socketToRoom map.`);
-            return;
-          }
-          const roomCode = room.roomCode;
-          if (!roomCode) {
-            console.warn(`PADDLE_DOWN received from socket ${socket.id} but roomCode is missing.`);
-            return;
-          }
- 
-          const gameManager = this.rooms.get(roomCode);
-          if (!gameManager) {
-            console.warn(`PADDLE_DOWN received from socket ${socket.id} for room ${roomCode} but GameManager not found.`);
-            return;
-          }
- 
-          let object = {
-            movePaddleUp: false,
-            movePaddleDown: true,
-          };
-          gameManager.updatePaddle(socket.id, object);
-          // console.log(`PADDLE_DOWN for socket ${socket.id} in room ${roomCode}`); // Optional: log every paddle move (can be noisy)
-        } catch (error) {
-          console.error(`Error handling PADDLE_DOWN for socket ${socket.id}:`, error);
-        }
+        const currentRoom = this.socketToRoom.get(socket.id);
+        if (!currentRoom) return;
+        const gameManagerInstance = this.rooms.get(currentRoom.roomCode);
+        if (!gameManagerInstance) return;
+
+        gameManagerInstance.updatePaddle(socket.id, {
+          movePaddleUp: false,
+          movePaddleDown: true,
+        });
       });
- 
+
       socket.on("PADDLE_STOP", () => {
-        try {
-          const room = this.socketToRoom.get(socket.id);
-          if (!room) {
-            console.warn(`PADDLE_STOP received from socket ${socket.id} but no room found in socketToRoom map.`);
-            return;
-          }
-          const roomCode = room.roomCode;
-          if (!roomCode) {
-             console.warn(`PADDLE_STOP received from socket ${socket.id} but roomCode is missing.`);
-             return;
-          }
- 
-          const gameManager = this.rooms.get(roomCode);
-          if (!gameManager) {
-             console.warn(`PADDLE_STOP received from socket ${socket.id} for room ${roomCode} but GameManager not found.`);
-             return;
-          }
- 
-          let object = {
-            movePaddleUp: false,
-            movePaddleDown: false,
-          };
-          gameManager.updatePaddle(socket.id, object);
-          // console.log(`PADDLE_STOP for socket ${socket.id} in room ${roomCode}`); // Optional: log every paddle move (can be noisy)
-        } catch (error) {
-          console.error(`Error handling PADDLE_STOP for socket ${socket.id}:`, error);
-        }
+        const currentRoom = this.socketToRoom.get(socket.id);
+        if (!currentRoom) return;
+        const gameManagerInstance = this.rooms.get(currentRoom.roomCode);
+        if (!gameManagerInstance) return;
+
+        gameManagerInstance.updatePaddle(socket.id, {
+          movePaddleUp: false,
+          movePaddleDown: false,
+        });
       });
- 
+
+      // --- Disconnect Event ---
       socket.on("disconnect", () => {
-        console.log(`Socket ${socket.id} disconnected.`);
-        const room = this.socketToRoom.get(socket.id);
- 
-        // Always clean up socketToRoom mapping
+        console.log(`[Socket Disconnected] Socket ID: ${socket.id}`);
+        const roomDisconnectedFrom = this.socketToRoom.get(socket.id);
+
+        // Always clean up socketToRoom mapping immediately
         this.socketToRoom.delete(socket.id);
- 
-        if (!room) {
-           console.log(`Socket ${socket.id} disconnected, but was not in a known room.`);
-           return;
+
+        if (!roomDisconnectedFrom) {
+          console.log(`[Socket ${socket.id}] Disconnected from an unknown or already cleaned-up room.`);
+          return;
         }
- 
-        const roomCode = room.roomCode;
+
+        const roomCode = roomDisconnectedFrom.roomCode;
         const gameManager = this.rooms.get(roomCode);
- 
-        if (!gameManager) {
-           console.warn(`Socket ${socket.id} disconnected from room ${roomCode}, but GameManager not found.`);
-           return;
+
+        // --- IMPORTANT: Handle player removal from the Room object directly ---
+        // Since Room.js doesn't have removePlayer, we'll manipulate the players array directly
+        const playerIndex = roomDisconnectedFrom.players.indexOf(socket.id);
+        if (playerIndex > -1) {
+            roomDisconnectedFrom.players.splice(playerIndex, 1); // Remove player from Room.players
+            roomDisconnectedFrom.activePlayers = roomDisconnectedFrom.players.length; // Update activePlayers
+            // Update gameStatus based on remaining players
+            if (roomDisconnectedFrom.activePlayers < roomDisconnectedFrom.maxPlayers && roomDisconnectedFrom.gameStatus === "InProgress") {
+                roomDisconnectedFrom.gameStatus = "Waiting"; // Or 'Ended' if game cannot continue
+            }
+            console.log(`[Room ${roomCode}] Player ${socket.id} removed from RoomManager's room. Remaining: ${roomDisconnectedFrom.activePlayers}`);
         }
- 
-        console.log(`Socket ${socket.id} disconnected from room ${roomCode}. Cleaning up.`);
- 
-        // Clear countdown timers BEFORE calling destroy
+
+        if (!gameManager) {
+          console.log(`[Room ${roomCode}] No GameManager found for disconnected socket ${socket.id}.`);
+          return;
+        }
+
+        console.log(`[Room ${roomCode}] Socket ${socket.id} disconnected.`);
+
+        // Clear countdown timers if they are active
         if (gameManager.countdownInterval) {
-          console.log(`Clearing countdown interval for room ${roomCode}`);
           clearInterval(gameManager.countdownInterval);
           gameManager.countdownInterval = null;
+          console.log(`[Room ${roomCode}] Cleared countdownInterval.`);
         }
         if (gameManager.initialTimeout) {
-          console.log(`Clearing initial timeout for room ${roomCode}`);
           clearTimeout(gameManager.initialTimeout);
           gameManager.initialTimeout = null;
+          console.log(`[Room ${roomCode}] Cleared initialTimeout.`);
         }
- 
-        // Notify the remaining player
-        const opponentId =
-          gameManager.player1 === socket.id
-            ? gameManager.player2
-            : gameManager.player1;
- 
-        if (opponentId) {
-          console.log(`Notifying opponent ${opponentId} in room ${roomCode} about disconnection.`);
-          this.io
-            .to(opponentId)
-            .emit("playerLeft", "Your opponent has disconnected.");
- 
-          // Clean up opponent's socketToRoom mapping - This might be problematic if the opponent is still connected but needs their mapping updated.
-          // It's usually better to only delete the disconnected socket's mapping.
-          // Let's remove this line unless there's a specific reason for it.
-          // this.socketToRoom.delete(opponentId);
+
+        // Remove player from GameManager (assuming GameManager has a removePlayer method)
+        // If GameManager doesn't have removePlayer, you'd need to manipulate its internal player list directly
+        if (typeof gameManager.removePlayer === 'function') {
+            gameManager.removePlayer(socket.id); 
+        } else {
+            console.warn(`[Room ${roomCode}] GameManager does not have a 'removePlayer' method.`);
+            // You might need to directly modify gameManager.players here if no method exists
+            // Example: gameManager.players = gameManager.players.filter(id => id !== socket.id);
         }
- 
-        // Stop the game and clean up
-        gameManager.destroy(); // Clears intervals, timeouts, and resets game state
- 
-        // Remove the game room from active rooms
-        this.rooms.delete(roomCode);
-        console.log(`Room ${roomCode} deleted after player disconnection. Active Rooms count: ${this.rooms.size}`);
- 
+        
+
+        // Notify the remaining player if any
+        if (gameManager.players.length > 0) { // Check if any player remains in GameManager after removal
+            const remainingPlayerId = gameManager.player1 === socket.id ? gameManager.player2 : gameManager.player1;
+            // The above needs careful handling if GameManager.player1/player2 are just references
+            // It's better to iterate gameManager.players if it's an array of current players
+            // Or if you only have 2 players max, then the other one is the opponent
+            let opponentId = null;
+            if(gameManager.player1 && gameManager.player1 !== socket.id) opponentId = gameManager.player1;
+            else if(gameManager.player2 && gameManager.player2 !== socket.id) opponentId = gameManager.player2;
+
+            if (opponentId) {
+                this.io.to(opponentId).emit("playerLeft", "Your opponent has disconnected. Game ended.");
+                console.log(`[Room ${roomCode}] Notified opponent ${opponentId} about disconnection.`);
+                // Clean up opponent's socketToRoom mapping as well if their game also ends
+                this.socketToRoom.delete(opponentId);
+                 // Disconnect opponent if the game requires two players and one left
+                const opponentSocket = this.io.sockets.sockets.get(opponentId);
+                if (opponentSocket) {
+                    opponentSocket.disconnect(true);
+                    console.log(`[Room ${roomCode}] Disconnected opponent socket ${opponentId}.`);
+                }
+            }
+        }
+        
+        // Clean up room and GameManager if no players remain based on RoomManager's room object
+        if (roomDisconnectedFrom.activePlayers === 0) {
+            gameManager.destroy(); // Clears intervals, timeouts, and resets game state in GameManager
+            this.rooms.delete(roomCode); // Remove GameManager from this.rooms map
+            RoomManager.deleteRoom(roomCode); // Delete the room from the global RoomManager map
+            console.log(`[Room ${roomCode}] GameManager and Room deleted from all managers as no players remain.`);
+        } else {
+            // If one player remains, the game might go into a waiting state or reset
+            console.log(`[Room ${roomCode}] One player remaining. Room status set to 'Waiting'.`);
+            roomDisconnectedFrom.gameStatus = "Waiting"; // Set room status back to waiting
+            this.io.to(roomCode).emit("opponentDisconnected", "Waiting for another player to join.");
+        }
       });
     });
   }
- 
+
   StartGameCountdown(room) {
-    let roomCode = room.roomCode;
+    const roomCode = room.roomCode;
+    // Ensure room exists in this.rooms (GameManager is present)
+    const gameManager = this.rooms.get(roomCode);
+    if (!gameManager) {
+        console.warn(`[Countdown] GameManager not found for room ${roomCode}. Cannot start countdown.`);
+        return;
+    }
+
+    console.log(`[Room ${roomCode}] Starting game countdown.`);
     this.io.to(roomCode).emit("CountDownUpdate", "May the best player Win");
     let countdown = 3;
- 
-    const initialTimeout = setTimeout(() => {
-      // Double-check room still exists before starting countdown
-      if (!this.rooms.has(roomCode)) {
+
+    // Store the initial timeout reference on the GameManager
+    gameManager.initialTimeout = setTimeout(() => {
+      // Double-check room/gameManager still exists before starting countdown interval
+      // And ensure there are enough active players according to the RoomManager's Room object
+      const currentRoomInRm = RoomManager.getRoom(roomCode);
+      if (!this.rooms.has(roomCode) || !gameManager || !currentRoomInRm || currentRoomInRm.activePlayers < 2) {
+        console.warn(`[Room ${roomCode}] Aborting countdown: Room/GameManager not found or not enough active players (${currentRoomInRm ? currentRoomInRm.activePlayers : 'N/A'}).`);
+        gameManager.initialTimeout = null; // Clear reference if aborted
+        // Potentially emit an update to remaining player if countdown is aborted
+        if(currentRoomInRm && currentRoomInRm.players.length > 0) {
+            this.io.to(roomCode).emit("countdownAborted", "Not enough players to start game.");
+        }
         return;
       }
- 
+
       const countdownInterval = setInterval(() => {
-        // Check if room still exists (players might have left)
-        if (!this.rooms.has(roomCode)) {
+        // Check if room/gameManager still exists (players might have left)
+        const currentRoomInRm = RoomManager.getRoom(roomCode);
+        if (!this.rooms.has(roomCode) || !gameManager || !currentRoomInRm || currentRoomInRm.activePlayers < 2) {
           clearInterval(countdownInterval);
+          gameManager.countdownInterval = null; // Clear reference if aborted
+          console.warn(`[Room ${roomCode}] Aborting countdown interval: Room/GameManager not found or not enough active players.`);
+          if(currentRoomInRm && currentRoomInRm.players.length > 0) {
+              this.io.to(roomCode).emit("countdownAborted", "Not enough players to continue game.");
+          }
           return;
         }
- 
+
         this.io.to(roomCode).emit("CountDownUpdate", countdown);
+        console.log(`[Room ${roomCode}] Countdown: ${countdown}`);
         countdown--;
- 
+
         if (countdown < 0) {
           clearInterval(countdownInterval);
-          let gameManager = this.rooms.get(roomCode);
-          if (gameManager) {
-            // Clear the reference since we're done with it
-            gameManager.countdownInterval = null;
-            gameManager.setupGameLoop();
-          }
+          gameManager.countdownInterval = null; // Clear reference since countdown finished
+          console.log(`[Room ${roomCode}] Countdown finished. Starting game loop.`);
+          gameManager.setupGameLoop();
         }
-      }, 700);
- 
-      // Store for cleanup on disconnect
-      const gameManager = this.rooms.get(roomCode);
-      if (gameManager) {
-        gameManager.countdownInterval = countdownInterval;
-      }
-    }, 900);
- 
-    // Store the timeout reference
-    const gameManager = this.rooms.get(roomCode);
-    if (gameManager) {
-      gameManager.initialTimeout = initialTimeout;
-    }
+      }, 1000); // Changed to 1000ms for clearer 1-second countdown
+
+      // Store the countdown interval reference on the GameManager
+      gameManager.countdownInterval = countdownInterval;
+    }, 1000); // Changed initial timeout to 1000ms for a consistent delay
   }
 }
- 
+
 module.exports = GameSocketManager;
