@@ -436,3 +436,53 @@ footer {
 #errorModal h2 {
     color: #ff4f4f;
 }
+
+/* --- Mobile Discouragement Styles --- */
+.mobile-discouragement {
+    display: none; /* Hidden by default */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #050a14; /* Same as body background */
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 20px;
+    z-index: 999; /* Ensure it's on top */
+}
+
+.mobile-discouragement p {
+    font-size: 1.2em;
+    line-height: 1.6;
+    margin-bottom: 15px;
+    color: #bbc6dd;
+}
+
+.mobile-discouragement p:last-child {
+    margin-bottom: 0;
+}
+
+/* Media query for mobile devices */
+@media (max-width: 768px) { /* Adjust breakpoint as needed */
+    .main-game-content {
+        display: none; /* Hide the main game interface */
+    }
+
+    nav, footer {
+        display: none; /* Hide navigation and footer */
+    }
+
+    .mobile-discouragement {
+        display: flex; /* Show the discouragement message */
+    }
+
+    /* Ensure modals are also hidden if they were somehow still visible */
+    #roomCodeModal, #errorModal {
+        display: none !important;
+    }
+}
