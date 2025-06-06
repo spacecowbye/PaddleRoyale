@@ -17,7 +17,8 @@ let isGameRunning = false;
 let isGameOver = false;
 let animationId = null;
 
-
+//const SERVER_URL = "https://polite-leticia-spacecowbye-452d654d.koyeb.app"
+const SERVER_URL = "http://localhost:8080"
 const gameOverModal = document.getElementById('gameOverModal');
 const gameOverTitle = document.getElementById('gameOverTitle');
 const gameOverMessage = document.getElementById('gameOverMessage');
@@ -30,7 +31,7 @@ const abandonMessage = document.getElementById('abandonMessage');
 const abandonReturnHomeButton = document.getElementById('abandonReturnHomeButton');
 
 
-const socket = io();
+const socket = io(SERVER_URL);
 if(!isGameOver)AudioManager.play("gameMusic");
 
 socket.on("connect", async () => {
@@ -334,14 +335,14 @@ playAgainButton.addEventListener('click', async () => {
     // Request a new room from the server and redirect
     try {
         console.log("Requesting a new room...");
-        const response = await axios.post("http://localhost:8080/create-room");
+        const response = await axios.post(`${SERVER_URL}/create-room`);
         const {roomCode} = response.data;
         console.log("New room created:", roomCode);
-        window.location.replace(`http://localhost:8080/game.html?room=${roomCode}`);
+        window.location.replace(`${SERVER_URL}/game.html?room=${roomCode}`);
     } catch (error) {
         console.error("Failed to create new room:", error);
         // Fallback to going home or showing an error if creating a room fails
-        window.location.replace('index.html?error=failedToCreateRoom');
+        window.location.replace(SERVER_URL);
     }
 });
 
@@ -414,7 +415,7 @@ returnHomeButton.addEventListener('click', () => {
   stopRenderLoop();
   socket.disconnect();
   setTimeout(() => {
-    window.location.replace('http://localhost:8080/index.html');
+    window.location.replace(`${SERVER_URL}/index.html`);
   }, 3000);
 });
 });
@@ -424,7 +425,7 @@ async function validateRoom(socketId) {
     const URLparams = new URLSearchParams(window.location.search);
     const roomCode = URLparams.get("room");
     const response = await axios.post(
-      `http://localhost:8080/join-room/${roomCode}`,
+      `${SERVER_URL}/join-room/${roomCode}`,
       { socketId }
     );
     console.log(response.data);
@@ -434,7 +435,7 @@ async function validateRoom(socketId) {
     } else {
       window.alert("Something Bad Happpened");
     }
-    window.location.replace('http://localhost:8080/');
+    window.location.replace(SERVER_URL);
   }
 }
 function startRenderLoop() {

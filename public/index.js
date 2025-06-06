@@ -15,16 +15,16 @@ document.getElementById("errorModal").addEventListener("click", function (event)
     }
 });
   
-
-
+// const SERVER_URL = "https://polite-leticia-spacecowbye-452d654d.koyeb.app"
+const SERVER_URL = "http://localhost:8080"
 // Play button - Create new room
 document.querySelector('.play').addEventListener('click', async () => {
     console.log("Play button clicked");
 
     try {
-        const response = await axios.post("http://localhost:8080/create-room");
+        const response = await axios.post(`${SERVER_URL}/create-room`);
         const {roomCode} = response.data;        
-        window.location.href = `http://localhost:8080/game.html?room=${roomCode}`;
+        window.location.href = `${SERVER_URL}/game.html?room=${roomCode}`;
        
     } catch (error) {
         showError("No response from Server, please try later");
@@ -83,12 +83,12 @@ submitButton.addEventListener('click', async() => {
     try {
         console.log("Sending join-room request with code:", roomCode);
         // First validate the room exists
-        const response = await axios.post(`http://localhost:8080/join-room/${roomCode}`, {
+        const response = await axios.post(`${SERVER_URL}/join-room/${roomCode}`, {
             socketId: 'pre-validate' // We'll get a real socket ID when we actually join
         });
         
         // If we get here, the room exists and we can redirect
-        window.location.replace(`http://localhost:8080/game.html?room=${roomCode}`);
+        window.location.replace(`${SERVER_URL}/game.html?room=${roomCode}`);
     } catch (error) {
         if(error.response){
             if (error.response.status === 400) {
