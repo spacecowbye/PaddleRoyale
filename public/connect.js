@@ -17,8 +17,8 @@ let isGameRunning = false;
 let isGameOver = false;
 let animationId = null;
 
-//const SERVER_URL = "https://polite-leticia-spacecowbye-452d654d.koyeb.app"
-const SERVER_URL = "http://localhost:8080"
+const SERVER_URL = "https://polite-leticia-spacecowbye-452d654d.koyeb.app"
+//const SERVER_URL = "http://localhost:8080"
 const gameOverModal = document.getElementById('gameOverModal');
 const gameOverTitle = document.getElementById('gameOverTitle');
 const gameOverMessage = document.getElementById('gameOverMessage');
