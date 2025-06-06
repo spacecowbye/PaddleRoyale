@@ -17,7 +17,7 @@ let isGameRunning = false;
 let isGameOver = false;
 let animationId = null;
 
-const SERVER_URL = "https://vivid-cod-spacecowbye-013de746.koyeb.app/"
+const SERVER_URL = "https://vivid-cod-spacecowbye-013de746.koyeb.app"
 //const SERVER_URL = "http://localhost:8080"
 const gameOverModal = document.getElementById('gameOverModal');
 const gameOverTitle = document.getElementById('gameOverTitle');

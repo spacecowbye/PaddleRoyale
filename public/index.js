@@ -15,7 +15,7 @@ document.getElementById("errorModal").addEventListener("click", function (event)
     }
 });
   
- const SERVER_URL = "https://vivid-cod-spacecowbye-013de746.koyeb.app/"
+ const SERVER_URL = "https://vivid-cod-spacecowbye-013de746.koyeb.app"
 //const SERVER_URL = "http://localhost:8080"
 // Play button - Create new room
 document.querySelector('.play').addEventListener('click', async () => {
