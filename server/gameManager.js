@@ -295,81 +295,102 @@ class GameManager {
     return GameState;
   }
 
-  handlePowerUp(powerUp, collectingPlayer) {
-    if (!powerUp || !collectingPlayer) return;
+  
+handlePowerUp(powerUp, collectingPlayer) {
+  if (!powerUp || !collectingPlayer) return;
 
-    const playerPaddle = collectingPlayer === this.player1 ? this.leftPaddle : this.rightPaddle;
-    const opponentPaddle = collectingPlayer === this.player1 ? this.rightPaddle : this.leftPaddle;
-    const opponentPlayer = collectingPlayer === this.player1 ? this.player2 : this.player1;
+  const playerPaddle = collectingPlayer === this.player1 ? this.leftPaddle : this.rightPaddle;
+  const opponentPaddle = collectingPlayer === this.player1 ? this.rightPaddle : this.leftPaddle;
+  const opponentPlayer = collectingPlayer === this.player1 ? this.player2 : this.player1;
 
-    // Get the object storing timers for the affected paddle (could be playerPaddle or opponentPaddle)
-    let affectedPaddleTimers;
-    let affectedPaddle;
-    let affectedPlayer;
-
-    switch (powerUp.type) {
-      case "Megaform":
-        affectedPaddleTimers = this.paddlePowerUpTimers[collectingPlayer];
-        affectedPaddle = playerPaddle;
-        affectedPlayer = collectingPlayer;
-        // Clear any existing Megaform timer for this player
-        if (affectedPaddleTimers["Megaform"]) {
-          clearTimeout(affectedPaddleTimers["Megaform"]);
-          console.log(`Cleared existing Megaform for ${affectedPlayer}`);
-          // Immediately reverse the previous effect if active, though not strictly needed here unless stacking
-          // affectedPaddle.length -= 50; // Only if you want to prevent stacking
-        }
-        affectedPaddle.length += 50;
-        console.log(`Applied Megaform to ${affectedPlayer}`);
-        affectedPaddleTimers["Megaform"] = setTimeout(() => {
-          affectedPaddle.length -= 50;
-          console.log(`Megaform wore off for ${affectedPlayer}`);
-          this.io.to(this.ROOM_CODE).emit("PowerUpWoreOff", { player: affectedPlayer, type: "Megaform" });
-          delete affectedPaddleTimers["Megaform"]; // Clean up reference
-        }, powerUp.timeToLive);
-        break;
-
-      case "Downsize":
-        affectedPaddleTimers = this.paddlePowerUpTimers[opponentPlayer]; // Downsize affects opponent
-        affectedPaddle = opponentPaddle;
-        affectedPlayer = opponentPlayer;
-        // Clear any existing Downsize timer for the opponent
-        if (affectedPaddleTimers["Downsize"]) {
-          clearTimeout(affectedPaddleTimers["Downsize"]);
-          console.log(`Cleared existing Downsize for ${affectedPlayer}`);
-          // Immediately reverse the previous effect if active
-          // affectedPaddle.length += 25; // Only if you want to prevent stacking
-        }
-        affectedPaddle.length -= 25;
-        console.log(`Applied Downsize to ${affectedPlayer}`);
-        affectedPaddleTimers["Downsize"] = setTimeout(() => {
-          affectedPaddle.length += 25;
-          console.log(`Downsize wore off for ${affectedPlayer}`);
-          this.io.to(this.ROOM_CODE).emit("PowerUpWoreOff", { player: affectedPlayer, type: "Downsize" });
-          delete affectedPaddleTimers["Downsize"]; // Clean up reference
-        }, powerUp.timeToLive);
-        break;
-
-      // case "uKnowReverse": // If you uncomment this, apply similar logic
-      //   this.playerWithReversedControls = opponentPlayer;
-      //   // You'd need to manage a timer for this as well in paddlePowerUpTimers
-      //   // Example:
-      //   // affectedPaddleTimers = this.paddlePowerUpTimers[opponentPlayer];
-      //   // if (affectedPaddleTimers["uKnowReverse"]) {
-      //   //   clearTimeout(affectedPaddleTimers["uKnowReverse"]);
-      //   // }
-      //   // affectedPaddleTimers["uKnowReverse"] = setTimeout(() => {
-      //   //   this.playerWithReversedControls = null;
-      //   //   this.io.to(this.ROOM_CODE).emit("PowerUpWoreOff", { player: opponentPlayer, type: "uKnowReverse" });
-      //   //   delete affectedPaddleTimers["uKnowReverse"];
-      //   // }, powerUp.timeToLive);
-      //   break;
-
-      default:
-        console.log("Unknown power-up type:", powerUp.type);
-    }
+  // Initialize simple queues if they don't exist (just one powerup per player max)
+  if (!this.currentPowerUp) {
+    this.currentPowerUp = {
+      [this.player1]: null,
+      [this.player2]: null
+    };
   }
 
+  // Determine which player's paddle will be affected
+  let affectedPlayer, affectedPaddle;
+  
+  switch (powerUp.type) {
+    case "Megaform":
+      affectedPlayer = collectingPlayer;
+      affectedPaddle = playerPaddle;
+      break;
+    case "Downsize":
+      affectedPlayer = opponentPlayer;
+      affectedPaddle = opponentPaddle;
+      break;
+    default:
+      console.log("Unknown power-up type:", powerUp.type);
+      return;
+  }
+
+  // If affected player already has a powerup, clear it first
+  if (this.currentPowerUp[affectedPlayer]) {
+    const currentPower = this.currentPowerUp[affectedPlayer];
+    
+    // Clear the timer
+    if (this.paddlePowerUpTimers[affectedPlayer][currentPower.type]) {
+      clearTimeout(this.paddlePowerUpTimers[affectedPlayer][currentPower.type]);
+      delete this.paddlePowerUpTimers[affectedPlayer][currentPower.type];
+    }
+    
+    // Reverse the effect immediately
+    switch (currentPower.type) {
+      case "Megaform":
+        affectedPaddle.length -= 50;
+        console.log(`Interrupted Megaform for ${affectedPlayer}`);
+        break;
+      case "Downsize":
+        affectedPaddle.length += 25;
+        console.log(`Interrupted Downsize for ${affectedPlayer}`);
+        break;
+    }
+    
+    this.io.to(this.ROOM_CODE).emit("PowerUpInterrupted", { 
+      player: affectedPlayer, 
+      type: currentPower.type 
+    });
+  }
+
+  // Apply the new powerup
+  switch (powerUp.type) {
+    case "Megaform":
+      affectedPaddle.length += 50;
+      console.log(`Applied Megaform to ${affectedPlayer}`);
+      
+      this.paddlePowerUpTimers[affectedPlayer]["Megaform"] = setTimeout(() => {
+        affectedPaddle.length -= 50;
+        console.log(`Megaform wore off for ${affectedPlayer}`);
+        this.io.to(this.ROOM_CODE).emit("PowerUpWoreOff", { player: affectedPlayer, type: "Megaform" });
+        delete this.paddlePowerUpTimers[affectedPlayer]["Megaform"];
+        this.currentPowerUp[affectedPlayer] = null; // Clear current powerup
+      }, powerUp.timeToLive);
+      break;
+
+    case "Downsize":
+      affectedPaddle.length -= 25;
+      console.log(`Applied Downsize to ${affectedPlayer}`);
+      
+      this.paddlePowerUpTimers[affectedPlayer]["Downsize"] = setTimeout(() => {
+        affectedPaddle.length += 25;
+        console.log(`Downsize wore off for ${affectedPlayer}`);
+        this.io.to(this.ROOM_CODE).emit("PowerUpWoreOff", { player: affectedPlayer, type: "Downsize" });
+        delete this.paddlePowerUpTimers[affectedPlayer]["Downsize"];
+        this.currentPowerUp[affectedPlayer] = null; // Clear current powerup
+      }, powerUp.timeToLive);
+      break;
+  }
+
+  // Store the current powerup
+  this.currentPowerUp[affectedPlayer] = {
+    type: powerUp.type,
+    timeToLive: powerUp.timeToLive
+  };
+}
   destroy() {
     console.log(`Destroying GameManager for room: ${this.ROOM_CODE}`);
 
