@@ -17,7 +17,7 @@ const GameSocketManager = require("./config/socket");
 dotenv.config();
 const app = express();
 const server = createServer(app);
-const PORT = process.env.PORT || 8080;
+const PORT =  8080;
 const gameSocketManager = new GameSocketManager(server);
 
 
