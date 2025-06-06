@@ -61,7 +61,7 @@ app.post("/join-room/:roomCode", (req, res) => {
 });
 
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`Server Started on Port ${PORT}`);
   console.log("HI");
 });
