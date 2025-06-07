@@ -293,7 +293,6 @@ updateScore(player) {
       y: null,
       type: null
     }
-
     };
     return GameState;
   }

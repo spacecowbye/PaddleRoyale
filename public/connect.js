@@ -568,7 +568,6 @@ function updatePowerupStatus(owner, powerupName, duration) {
 
 function getPowerupDescription(name) {
   const descriptions = {
-    //uKnowReverse: "W goes Down and S goes up",
     Megaform: "The paddle hit the gym. Now it's SWOLE.",
     Downsize: "Management wants a smaller paddle",
   };
@@ -634,26 +633,6 @@ function drawPowerUp(powerUp) {
       );
 
       break;
-
-    // case "uKnowReverse":
-    //   // Outer glowing orange rectangle
-    //   c.fillStyle = "#FF7700"; // Neon orange
-    //   c.shadowBlur = 12;
-    //   c.shadowColor = "#FF7700";
-    //   c.fillRect(x, y, size, size);
-    //   // Inner deep red rectangle
-    //   const reverseInnerSize = size * 0.6;
-    //   const reverseInnerX = x + (size - reverseInnerSize) / 2;
-    //   const reverseInnerY = y + (size - reverseInnerSize) / 2;
-    //   c.fillStyle = "#661100"; // Deep red for contrast
-    //   c.shadowBlur = 0;
-    //   c.fillRect(
-    //     reverseInnerX,
-    //     reverseInnerY,
-    //     reverseInnerSize,
-    //     reverseInnerSize
-    //   );
-    //   break;
   }
 }
 
@@ -717,7 +696,8 @@ window.addEventListener('beforeunload', () => {
   stopRenderLoop();
   cleanupSocketEvents();
   cleanupPowerupTimers();
-  cleanupCelebration();
+  // Ensure cleanupCelebration is defined or remove this call if it's not needed.
+  // cleanupCelebration(); 
   if (typeof AudioManager !== 'undefined' && AudioManager.stop) {
     AudioManager.stop("gameMusic");
     AudioManager.stop("gameEnd");
