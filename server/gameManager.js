@@ -266,8 +266,21 @@ updateScore(player) {
     this.rightPaddle.updatePosition(this.CANVAS_HEIGHT);
 
     let GameState = {
-      Ball: this.ball,
-      Paddle1: this.leftPaddle,
+      Ball : {
+        x : this.ball.x,
+        y : this.ball.y
+      },
+      Paddle1:{
+        x : this.leftPaddle.x,
+        y : this.leftPaddle.y,
+        length : this.leftPaddle.length
+      },
+      Paddle2:{
+        x : this.rightPaddle.x,
+        y : this.rightPaddle.y,
+        length : this.rightPaddle.length
+      },
+       
       Paddle2: this.rightPaddle,
       PowerUp: this.PowerUp,
     };
