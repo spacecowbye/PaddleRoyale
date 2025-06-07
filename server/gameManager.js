@@ -282,11 +282,18 @@ updateScore(player) {
         y : this.rightPaddle.y,
         length : this.rightPaddle.length
       },
-      PowerUp:{
-        x : this.PowerUp.x,
-        y : this.PowerUp.y,
-        type : this.PowerUp.type
-      }
+   PowerUp: this.PowerUp !== null && this.PowerUp !== undefined
+  ? {
+      x: this.PowerUp.x,
+      y: this.PowerUp.y,
+      type: this.PowerUp.type
+    }
+  : {
+      x: null,
+      y: null,
+      type: null
+    }
+
     };
     return GameState;
   }
