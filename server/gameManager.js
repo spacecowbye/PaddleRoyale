@@ -271,18 +271,22 @@ updateScore(player) {
         y : this.ball.y
       },
       Paddle1:{
+        player : this.leftPaddle.player,
         x : this.leftPaddle.x,
         y : this.leftPaddle.y,
         length : this.leftPaddle.length
       },
       Paddle2:{
+        player : this.rightPaddle.player,
         x : this.rightPaddle.x,
         y : this.rightPaddle.y,
         length : this.rightPaddle.length
       },
-       
-      Paddle2: this.rightPaddle,
-      PowerUp: this.PowerUp,
+      PowerUp:{
+        x : this.PowerUp.x,
+        y : this.PowerUp.y,
+        type : this.PowerUp.type
+      }
     };
     return GameState;
   }

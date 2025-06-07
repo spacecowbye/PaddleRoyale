@@ -3,8 +3,10 @@ const CANVAS_WIDTH = 652;
 const CANVAS_HEIGHT = 404;
 canvas.width = CANVAS_WIDTH;
 canvas.height = CANVAS_HEIGHT;
-const BALL_RADIUS = 10
-const PADDLE_WIDTH = 15
+const BALL_RADIUS = 10;
+const PADDLE_WIDTH = 15;
+const POWERUP_HEIGHT = 32
+const POWERUP_WIDTH = 32;
 let c = canvas.getContext("2d");
 
 const BACKGROUND_COLOR = "#0A192F"; // Dark blue (Futuristic)
@@ -468,8 +470,7 @@ function renderGame(GameState) {
   if (
     Ball &&
     Ball.x !== undefined &&
-    Ball.y !== undefined &&
-    Ball.radius !== undefined
+    Ball.y !== undefined 
   ) {
     drawBall(Ball);
   }
@@ -593,7 +594,7 @@ function drawPaddle(Paddle) {
 
 function drawPowerUp(powerUp) {
   if (!powerUp) return;
-  const size = powerUp.width; // Fixed size (24x24)
+  const size = POWERUP_WIDTH // Fixed size (24x24)
   const x = powerUp.x;
   const y = powerUp.y;
   const type = powerUp.type;
