@@ -437,52 +437,71 @@ footer {
     color: #ff4f4f;
 }
 
-/* --- Mobile Discouragement Styles --- */
-.mobile-discouragement {
-    display: none; /* Hidden by default */
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: #050a14; /* Same as body background */
-    color: #fff;
-    font-family: 'Inter', sans-serif;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    padding: 20px;
-    z-index: 999; /* Ensure it's on top */
+
+.mobile-not-supported {
+    display: none;
+    text-align: center; /* Center the text */
+    color: #ff4f4f; /* A reddish color for the error message */
+    font-size: 1.1em;
+    font-weight: bold;
+    margin-top: 20px; /* Space it out from the paragraph */
 }
 
-.mobile-discouragement p {
-    font-size: 1.2em;
-    line-height: 1.6;
-    margin-bottom: 15px;
-    color: #bbc6dd;
-}
-
-.mobile-discouragement p:last-child {
-    margin-bottom: 0;
-}
-
-/* Media query for mobile devices */
-@media (max-width: 768px) { /* Adjust breakpoint as needed */
-    .main-game-content {
-        display: none; /* Hide the main game interface */
+/* Media query for mobile devices (screens smaller than 768px, adjust as needed) */
+@media (max-width: 767px) {
+    .container {
+        flex-direction: column;
+        gap: 40px;
+        padding: 20px;
+        /* Add these to center the container content */
+        align-items: center; /* Center items horizontally in a column flex container */
+        justify-content: center; /* Center items vertically */
+        text-align: center; /* Ensure text within the container is centered */
+        width: 100%; /* Ensure container takes full width to allow centering */
     }
 
-    nav, footer {
-        display: none; /* Hide navigation and footer */
+    .text-content {
+        /* Remove or adjust these if they conflict with outer centering */
+        /* display: flex; /* Remove this or ensure it's not overriding text alignment */
+        /* flex-direction: column; */
+        /* align-items: center; /* This is good for its children, but text-align for its own text */
+        max-width: 90%; /* Allow it to take more width on small screens */
+        text-align: center; /* Explicitly center text within this div */
     }
 
-    .mobile-discouragement {
-        display: flex; /* Show the discouragement message */
+    h1 {
+        /* Ensure h1 itself is centered */
+        width: 100%; /* Take full width to allow its internal flex to center */
+        align-items: center; /* Keep this for the column layout of PADDLE Royale */
+        text-align: center; /* Explicitly center the text within the h1 */
+        font-size: 38px; /* Slightly smaller on mobile */
     }
 
-    /* Ensure modals are also hidden if they were somehow still visible */
-    #roomCodeModal, #errorModal {
-        display: none !important;
+    p {
+        font-size: 15px; /* Slightly smaller on mobile */
+        text-align: center; /* Ensure paragraph text is centered */
+    }
+
+    .desktop-only-buttons {
+        display: none; /* Hide the buttons on mobile */
+    }
+
+    .mobile-not-supported {
+        display: block; /* Show the "Not supported" message on mobile */
+        margin-left: auto; /* Auto margins help center block elements */
+        margin-right: auto;
+        max-width: fit-content; /* Ensure it doesn't stretch unnecessary */
+    }
+
+    .game-preview {
+        width: 300px;
+        height: 180px;
+        margin-left: auto; /* Center the game preview */
+        margin-right: auto;
+    }
+
+    /* Optional: Adjust footer for better mobile spacing */
+    footer {
+        padding: 15px 0; /* Reduce horizontal padding if needed */
     }
 }

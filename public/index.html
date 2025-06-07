@@ -7,12 +7,10 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <!-- Navigation -->
     <nav>
       <a href="#">Home</a>
     </nav>
 
-    <!-- Main Content -->
     <div class="container">
       <div class="text-content">
         <h1>
@@ -24,21 +22,24 @@
           powerups. Simple, addictive, and competitive. Challenge your friends
           to show them you are the best.
         </p>
-        <div class="buttons">
-          <button class="play">Play Now</button>
-          <button class="learn">Enter Room Code</button>
+        <div class="desktop-only-buttons">
+          <div class="buttons">
+            <button class="play">Play Now</button>
+            <button class="learn">Enter Room Code</button>
+          </div>
+        </div>
+        <div class="mobile-not-supported">
+          <p>Not supported on mobile</p>
         </div>
       </div>
 
       <div class="game-preview">
-        <!-- Game visual elements -->
         <div class="left-paddle"></div>
         <div class="right-paddle"></div>
         <div class="ball"></div>
         <span class="score">0 : 0</span>
         <div class="scanlines"></div>
 
-        <!-- Preview overlay -->
         <div class="preview-overlay">
           <div class="play-icon"></div>
         </div>
@@ -46,7 +47,6 @@
       </div>
     </div>
 
-    <!-- Room Code Modal -->
     <div id="roomCodeModal" class="modal">
       <div class="modal-content">
         <span class="close">&times;</span>
@@ -56,7 +56,6 @@
       </div>
     </div>
 
-    <!-- Error Modal -->
     <div id="errorModal" class="modal">
       <div class="modal-content">
         <span class="close" onclick="closeErrorModal()">&times;</span>
@@ -66,7 +65,6 @@
       </div>
     </div>
 
-    <!-- Footer -->
     <footer>
       <div>© 2025 Paddle Royale. All rights reserved.</div>
       <div class="social-links">

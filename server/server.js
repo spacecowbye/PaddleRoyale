@@ -26,6 +26,7 @@ const gameSocketManager = new GameSocketManager(server);
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+//app.use(express.static(path.join(__dirname, '../public')));
 app.use(cors());
 
 app.post("/create-room", (req, res) => {
