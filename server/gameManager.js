@@ -44,8 +44,9 @@ class GameManager {
       this.player2
     );
     this.PowerUp = null;
-    //this.PowerUpTypes = ["Downsize", "Megaform", "uKnowReverse"]; // Store available power-ups
-    this.PowerUpTypes = ["Downsize", "Megaform"]; // Store available power-ups
+    // this.PowerUpTypes = ["Downsize", "Megaform", "uKnowReverse"]; // Store available power-ups
+    this.PowerUpTypes = ["Downsize", "uKnowReverse"]; // Store available power-ups
+    
 
     this.lastPowerUpType = null; // Track last generated type
     this.playerWithReversedControls = null;
@@ -215,6 +216,7 @@ updateScore(player) {
 
       // Ensure ball is outside paddle to prevent sticking
       this.ball.x = this.rightPaddle.x - this.ball.radius;
+        this.io.to(this.ROOM_CODE).emit("PaddleHit");
     }
 
     // Left paddle collision
@@ -321,13 +323,18 @@ updateScore(player) {
           this.io.to(this.ROOM_CODE).emit("PowerUpWoreOff");
         }, powerUp.timeToLive);
 
-      // case "uKnowReverse":
-      //   this.playerWithReversedControls = opponentPlayer;
-      //   this.handlePowerupTimeout = setTimeout(() => {
-      //     this.playerWithReversedControls = null;
-      //     this.io.to(this.ROOM_CODE).emit("PowerUpWoreOff");
-      //   }, powerUp.timeToLive);
-      //   break;
+        case "uKnowReverse":
+        // Set the opponent's controls to be reversed
+        this.playerWithReversedControls = opponentPlayer;
+        console.log(`Reversed controls for: ${opponentPlayer}`); // Log for debugging
+
+        // Set a timeout to revert controls after the power-up duration
+        this.handlePowerupTimeout = setTimeout(() => {
+          this.playerWithReversedControls = null; // Revert controls to normal
+          console.log(`Reversed controls wore off for: ${opponentPlayer}`); // Log for debugging
+          this.io.to(this.ROOM_CODE).emit("PowerUpWoreOff", { player: opponentPlayer, type: "uKnowReverse" }); // Emit an event when it wears off
+        }, powerUp.timeToLive);
+        break; // And a break here!
 
       default:
         console.log("Unknown power-up type:", powerUp.type);

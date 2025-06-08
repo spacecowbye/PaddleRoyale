@@ -19,6 +19,11 @@ const AudioManager = {
     loop: true,
     volume: 0.4,
   }),
+  paddleHit: new Howl({
+    src : ["assets/music/paddleHit.mp3"],
+    loop : false,
+    volume : 0.8
+  }),
   play: function (soundName) {
     if (this[soundName]) {
       if (soundName !== "gameMusic") {

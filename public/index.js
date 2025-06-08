@@ -15,8 +15,8 @@ document.getElementById("errorModal").addEventListener("click", function (event)
     }
 });
   
-const SERVER_URL = "https://paddleroyale.duckdns.org"
-//const SERVER_URL = "http://localhost:8080"
+//const SERVER_URL = "https://paddleroyale.duckdns.org"
+const SERVER_URL = "http://localhost:8080"
 // Play button - Create new room
 document.querySelector('.play').addEventListener('click', async () => {
     console.log("Play button clicked");

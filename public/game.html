@@ -295,7 +295,7 @@
       }
 
       /* Sound Control Styles */
-     .sound-controls {
+      .sound-controls {
         position: fixed; /* Changed from absolute to fixed */
         bottom: 20px;
         right: 20px;
@@ -794,18 +794,18 @@
         height: 20px;
         margin-right: 10px;
         flex-shrink: 0;
-        border: 2px solid #00E5FF; /* Default border for consistency */
+        border: 2px solid #00e5ff; /* Default border for consistency */
         box-sizing: border-box; /* Include border in element's total width and height */
       }
 
       .game-info-panel .powerup-legend .legend-item .icon.megaform {
-        background-color: #00E5FF; /* Filled color for Megaform */
-        border-color: #00E5FF; /* Ensure border color matches fill */
+        background-color: #00e5ff; /* Filled color for Megaform */
+        border-color: #00e5ff; /* Ensure border color matches fill */
       }
 
       .game-info-panel .powerup-legend .legend-item .icon.downsize {
         background-color: transparent; /* Transparent background for Downsize */
-        border-color: #00FF88; /* Green border for Downsize as seen in drawPowerUp */
+        border-color: #00ff88; /* Green border for Downsize as seen in drawPowerUp */
       }
 
       /* Ensure descriptions are aligned */
@@ -813,76 +813,76 @@
         flex-grow: 1;
       }
       /* --- Mobile Specific Styles --- */
-@media screen and (max-width: 768px) {
-  /* Hide core game elements on small screens */
-  .game-area-wrapper,
-  .scoreboard,
-  canvas,
-  .room-code-container,
-  .sound-controls {
-    display: none !important; /* Use !important to override other display properties */
-  }
+      @media screen and (max-width: 768px) {
+        /* Hide core game elements on small screens */
+        .game-area-wrapper,
+        .scoreboard,
+        canvas,
+        .room-code-container,
+        .sound-controls {
+          display: none !important; /* Use !important to override other display properties */
+        }
 
-  /* Display the mobile unsupported message */
-  #mobile-unsupported-message {
-    display: flex; /* Use flexbox to easily center content */
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    min-height: calc(
-      100vh - 60px
-    ); /* Take full height minus navbar height */
-    padding: 20px;
-    box-sizing: border-box; /* Include padding in element's total width and height */
-    background-color: #1a1a2e;
-    color: #ff0080;
-    font-size: 1.3em;
-    line-height: 1.6;
-    border: 2px solid #ff0080;
-    margin: 20px;
-    border-radius: 15px;
-    box-shadow: 0 0 25px rgba(255, 0, 128, 0.5);
-  }
+        /* Display the mobile unsupported message */
+        #mobile-unsupported-message {
+          display: flex; /* Use flexbox to easily center content */
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          text-align: center;
+          min-height: calc(
+            100vh - 60px
+          ); /* Take full height minus navbar height */
+          padding: 20px;
+          box-sizing: border-box; /* Include padding in element's total width and height */
+          background-color: #1a1a2e;
+          color: #ff0080;
+          font-size: 1.3em;
+          line-height: 1.6;
+          border: 2px solid #ff0080;
+          margin: 20px;
+          border-radius: 15px;
+          box-shadow: 0 0 25px rgba(255, 0, 128, 0.5);
+        }
 
-  #mobile-unsupported-message h2 {
-    font-size: 2em;
-    color: #00ffff;
-    text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
-    margin-bottom: 15px;
-  }
+        #mobile-unsupported-message h2 {
+          font-size: 2em;
+          color: #00ffff;
+          text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+          margin-bottom: 15px;
+        }
 
-  #mobile-unsupported-message p {
-    max-width: 80%;
-    margin: 0 auto 20px auto;
-  }
+        #mobile-unsupported-message p {
+          max-width: 80%;
+          margin: 0 auto 20px auto;
+        }
 
-  #mobile-unsupported-message .back-button {
-    position: static; /* Remove absolute positioning */
-    margin-top: 20px;
-  }
+        #mobile-unsupported-message .back-button {
+          position: static; /* Remove absolute positioning */
+          margin-top: 20px;
+        }
 
-  /* Adjustments for the navbar on mobile if needed, though it's generally fine */
-  .navbar {
-    position: relative;
-    width: 100%;
-  }
+        /* Adjustments for the navbar on mobile if needed, though it's generally fine */
+        .navbar {
+          position: relative;
+          width: 100%;
+        }
 
-  .back-button {
-    /* If you want to keep the back button visible on mobile */
-    position: absolute;
-    top: 15px;
-    left: 15px;
-    z-index: 100;
-  }
-}
+        .back-button {
+          /* If you want to keep the back button visible on mobile */
+          position: absolute;
+          top: 15px;
+          left: 15px;
+          z-index: 100;
+        }
+      }
 
-/* Styles for larger screens (desktop/tablet) - ensuring game elements are visible */
-@media screen and (min-width: 769px) {
-  #mobile-unsupported-message {
-    display: none; /* Hide the message on larger screens */
-  }
-}
+      /* Styles for larger screens (desktop/tablet) - ensuring game elements are visible */
+      @media screen and (min-width: 769px) {
+        #mobile-unsupported-message {
+          display: none; /* Hide the message on larger screens */
+        }
+      }
     </style>
   </head>
 
@@ -945,14 +945,6 @@
         </div>
 
         <div class="info-section">
-          <h3>Game Rules</h3>
-          <p>
-            <strong>Reach <strong>10</strong> points before your opponent!</strong>
-             Each paddle hit makes the ball move faster.
-          </p>
-        </div>
-
-        <div class="info-section">
           <h3>Power-up Legend</h3>
           <div class="powerup-legend-item">
             <div class="powerup-icon">
@@ -977,6 +969,19 @@
             <div class="powerup-text">
               <strong>Downsize:</strong> Decrease the size of the opponent
               paddle
+            </div>
+          </div>
+          <div class="powerup-legend-item">
+            <div class="powerup-icon">
+              <img
+                src="/assets/images/uKnowReverse.png"
+                alt="uKnowReverse power-up"
+                class="powerup-image"
+              />
+            </div>
+            <div class="powerup-text">
+              <strong>uKnowReverse:</strong> Reverses opponent's controls
+              temporarily
             </div>
           </div>
         </div>
