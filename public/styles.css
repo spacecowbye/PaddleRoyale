@@ -29,27 +29,31 @@ body::after {
     z-index: -1;
 }
 
-/* NEW STYLES FOR TOP SOCIAL LINKS */
+/* NEW STYLES FOR TOP SOCIAL LINKS - Always visible */
 .top-social-links {
-    display: none; /* Hidden by default (for desktop) */
+    display: flex; /* Ensure visibility on both desktop and mobile */
     width: 100%;
-    padding: 15px 20px; /* Some padding for spacing */
+    padding: 20px 30px; /* Increased padding for prominence */
     background-color: #050a14; /* Match body background */
     box-sizing: border-box;
-    /* Optional: add a subtle border-bottom if you like */
-    /* border-bottom: 1px solid rgba(127, 255, 127, 0.1); */
+    justify-content: flex-start; /* Align to the start on desktop */
+    align-items: center;
+    /* Optional: add a subtle border-bottom if you like to emphasize separation */
+    border-bottom: 1px solid rgba(127, 255, 127, 0.15); /* More prominent border */
 }
 
 .top-social-links a {
     color: #7fff7f;
     text-decoration: none;
-    font-size: 16px;
-    transition: color 0.3s;
-    margin: 0 15px; /* Space between links */
+    font-size: 18px; /* Slightly larger font size */
+    transition: color 0.3s, text-shadow 0.3s; /* Add text-shadow transition */
+    margin: 0 20px; /* Increased space between links */
+    font-weight: bold; /* Make text bolder */
 }
 
 .top-social-links a:hover {
     color: #fff;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.6); /* Add a subtle glow on hover */
 }
 
 
@@ -428,21 +432,25 @@ button {
 
 /* Media query for mobile devices (screens smaller than 768px, adjust as needed) */
 @media (max-width: 767px) {
-    /* Show the top social links on mobile */
+    /* Social links on mobile - prominently centered */
     .top-social-links {
-        display: flex; /* Make visible on mobile */
-        justify-content: center; /* Center horizontally */
-        align-items: center; /* Center vertically (if height allows) */
-        position: static; /* Important: Make it flow with the document */
-        margin-bottom: 20px; /* Add some space below the social links */
+        display: flex; /* Ensure visibility */
+        justify-content: center; /* Center horizontally on mobile */
+        align-items: center;
+        position: static;
+        margin-bottom: 20px;
+        padding: 15px 20px; /* Adjust padding for mobile if needed */
+        border-bottom: 1px solid rgba(127, 255, 127, 0.1); /* Keep a subtle border for consistency */
     }
 
-    /* Adjust body padding if you decide to make .top-social-links fixed on mobile */
-    /* If .top-social-links is static, padding-top on body is not strictly needed for content clearance */
+    .top-social-links a {
+        font-size: 16px; /* Adjust font size for mobile if desired */
+        margin: 0 10px; /* Reduce margin between links for tighter spacing on mobile */
+    }
+
     body {
-        padding-top: 0; /* Reset if you had it for a fixed header */
+        padding-top: 0;
     }
-
 
     .container {
         flex-direction: column;
@@ -452,8 +460,8 @@ button {
         justify-content: center;
         text-align: center;
         width: 100%;
-        margin-top: 0; /* Ensure no extra margin pushes it down */
-        margin-bottom: 0; /* Ensure no extra margin */
+        margin-top: 0;
+        margin-bottom: 0;
     }
 
     .text-content {
@@ -492,6 +500,4 @@ button {
         margin-left: auto;
         margin-right: auto;
     }
-
-
 }
