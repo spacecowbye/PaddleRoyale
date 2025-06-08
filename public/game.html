@@ -229,7 +229,32 @@
         max-width: 600px;
         margin-bottom: 20px;
       }
+      /* Base score display style - apply this to the elements holding the scores */
+.score { /* CHANGED FROM .score-display */
+    font-size: 3em; /* Adjust to match your current display size */
+    font-weight: bold;
+    color: #FFFFFF; /* Default white text */
+    /* Add transitions for smooth animation */
+    transition: color 0.3s ease-out, transform 0.2s ease-out, text-shadow 0.3s ease-out;
+    display: inline-block; /* Crucial for transform to work */
+    min-width: 0.6em; /* Prevent numbers from shifting width too much */
+    text-align: center;
+}
 
+/* Style for when a score increases (using teal/aqua) */
+.score.score-increased { /* CHANGED FROM .score-display.score-increased */
+    color: #00FFFF; /* Vibrant Cyan/Aqua from your modal */
+    transform: scale(1.1); /* Pop out slightly */
+    text-shadow: 0 0 8px #00FFFF, 0 0 20px #00FFFF; /* Matching glow effect */
+}
+
+/* Separator style (optional, adjust if needed) */
+.score-divider { /* This is correct for your HTML */
+    font-size: 3em;
+    font-weight: bold;
+    color: #FFFFFF;
+    margin: 0 10px;
+}
       .score {
         font-size: 48px;
         font-weight: bold;

@@ -1,4 +1,3 @@
-// --- Game Canvas and Context Setup ---
 const canvas = document.querySelector("#gameCanvas");
 const CANVAS_WIDTH = 652;
 const CANVAS_HEIGHT = 404;
@@ -18,16 +17,16 @@ const LINE_COLOR = "#FFFFFF"; // Soft white (Classic arcade style)
 
 // --- Game State and Control Variables ---
 let mySocket = null;
-let countdown = null; // Used for power-up timer display
+let countdown = null;
 let currentGameState = null;
 let isGameRunning = false;
 let isGameOver = false;
 let animationId = null; // Stores the requestAnimationFrame ID
 
-// --- Server Configuration ---
+
 const SERVER_URL = "http://localhost:8080"; // Or "https://paddleroyale.duckdns.org"
 
-// --- DOM Elements for Modals ---
+
 const gameOverModal = document.getElementById("gameOverModal");
 const gameOverTitle = document.getElementById("gameOverTitle");
 const gameOverMessage = document.getElementById("gameOverMessage");
@@ -38,7 +37,7 @@ const abandonModal = document.getElementById("abandonModal");
 const abandonTitle = document.getElementById("abandonTitle");
 const abandonMessage = document.getElementById("abandonMessage");
 
-// --- Paddle Visual Effects Variables ---
+
 const RECOIL_DURATION = 0.1; // seconds, how long the paddle recoils
 const RECOIL_MAGNITUDE = 3; // pixels, how far the paddle recoils
 let paddle1RecoilTimer = 0; // Timer for Paddle1's recoil
@@ -46,18 +45,387 @@ let paddle2RecoilTimer = 0; // Timer for Paddle2's recoil
 let lastBallX = null; // Stores previous ball X to detect collision direction
 let lastBallY = null; // Stores previous ball Y to detect collision direction
 
-// --- Paddle Rocket Smoke Particles ---
-const PADDLE_SMOKE_PARTICLE_LIFETIME = 0.5; // seconds
-const PADDLE_SMOKE_PARTICLE_SIZE = 3; // pixels
-const PADDLE_SMOKE_PARTICLE_COLOR = "rgba(200, 200, 200, 0.7)"; // Faint white/grey smoke
-const PADDLE_SMOKE_EMISSION_RATE = 2; // Particles per frame when moving
 
-let paddle1Particles = []; // Particles for Paddle1's smoke
-let paddle2Particles = []; // Particles for Paddle2's smoke
 
-// Store previous paddle Y positions to detect movement
+
+// Enhanced Paddle Particle System Configuration
+const PARTICLE_CONFIG = {
+    // Rocket Trail Particles (main effect)
+    ROCKET_TRAIL: {
+        LIFETIME: 0.8,
+        SIZE_RANGE: [2, 5],
+        EMISSION_RATE: 4,
+        SPEED_RANGE: [15, 35],
+        COLORS: ['#00E5FF', '#0099CC', '#66D9EF', '#FFFFFF'],
+        GRAVITY: -20,
+        DRAG: 0.95
+    },
+
+    // Speed Streaks (when moving fast)
+    SPEED_STREAKS: {
+        LIFETIME: 0.3,
+        SIZE_RANGE: [1, 3],
+        EMISSION_RATE: 4,
+        SPEED_RANGE: [25, 45],
+        COLORS: ['#FF3860', '#FF6B9D', '#FFAA00'],
+        FADE_SPEED: 3
+    },
+
+    // Spark Particles (dramatic effect)
+    SPARKS: {
+        LIFETIME: 0.5,
+        SIZE_RANGE: [1, 2],
+        EMISSION_RATE: 6,
+        SPEED_RANGE: [20, 50],
+        COLORS: ['#FFFF00', '#FFA500', '#FF4500', '#FFFFFF'],
+        GRAVITY: 40,
+        BOUNCE: 0.3
+    },
+
+    // Glow Orbs (ambient effect)
+    GLOW_ORBS: {
+        LIFETIME: 1.2,
+        SIZE_RANGE: [3, 8],
+        EMISSION_RATE: 2,
+        SPEED_RANGE: [5, 15],
+        COLORS: ['rgba(0,229,255,0.6)', 'rgba(102,217,239,0.4)', 'rgba(255,255,255,0.3)'],
+        FLOAT_STRENGTH: 10
+    }
+};
+
+// Enhanced particle arrays with movement tracking
+let paddle1Particles = [];
+let paddle2Particles = [];
 let lastPaddle1Y = null;
 let lastPaddle2Y = null;
+let paddle1Speed = 0; // NEW: Track paddle speed for intensity
+let paddle2Speed = 0; // NEW: Track paddle speed for intensity
+
+
+// Particle class for better organization
+class Particle {
+    constructor(x, y, type, direction, speed) {
+        this.x = x;
+        this.y = y;
+        this.type = type;
+        this.direction = direction; // 1 for down, -1 for up
+
+        const config = PARTICLE_CONFIG[type];
+
+        // Initialize properties based on type
+        this.life = config.LIFETIME;
+        this.maxLife = config.LIFETIME;
+        this.size = this.randomInRange(config.SIZE_RANGE);
+        this.maxSize = this.size;
+        this.color = this.getRandomColor(config.COLORS);
+
+        // Velocity based on direction and speed
+        // Increased influence of 'speed' on particle velocity
+        const particleSpeed = this.randomInRange(config.SPEED_RANGE) * (speed / 70 + 0.5); // Adjusted multiplier
+        this.vx = (Math.random() - 0.5) * particleSpeed * 0.3;
+        this.vy = direction * particleSpeed + (Math.random() - 0.5) * 10;
+
+        // Special properties for different particle types
+        this.setupSpecialProperties(config);
+    }
+
+    randomInRange(range) {
+        return Math.random() * (range[1] - range[0]) + range[0];
+    }
+
+    getRandomColor(colors) {
+        return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    setupSpecialProperties(config) {
+        switch(this.type) {
+            case 'ROCKET_TRAIL':
+                this.gravity = config.GRAVITY;
+                this.drag = config.DRAG;
+                this.trail = [];
+                break;
+            case 'SPEED_STREAKS':
+                this.fadeSpeed = config.FADE_SPEED;
+                this.initialVx = this.vx;
+                this.initialVy = this.vy;
+                break;
+            case 'SPARKS':
+                this.gravity = config.GRAVITY;
+                this.bounce = config.BOUNCE;
+                this.sparkle = Math.random() < 0.5;
+                break;
+            case 'GLOW_ORBS':
+                this.floatStrength = config.FLOAT_STRENGTH;
+                this.floatOffset = Math.random() * Math.PI * 2;
+                this.glowSize = this.size * 2;
+                break;
+        }
+    }
+
+    update(deltaTime) {
+        // Update position
+        this.x += this.vx * deltaTime;
+        this.y += this.vy * deltaTime;
+
+        // Update life
+        this.life -= deltaTime;
+
+        // Type-specific updates
+        this.updateSpecialBehavior(deltaTime);
+
+        return this.life > 0;
+    }
+
+    updateSpecialBehavior(deltaTime) {
+        const lifeRatio = this.life / this.maxLife;
+
+        switch(this.type) {
+            case 'ROCKET_TRAIL':
+                // Add trail point
+                this.trail.push({x: this.x, y: this.y, life: 0.2});
+                if (this.trail.length > 8) this.trail.shift();
+
+                // Update trail
+                this.trail.forEach(point => point.life -= deltaTime * 2);
+                this.trail = this.trail.filter(point => point.life > 0);
+
+                // Apply physics
+                this.vy += this.gravity * deltaTime;
+                this.vx *= this.drag;
+                this.vy *= this.drag;
+
+                // Size changes
+                this.size = this.maxSize * lifeRatio;
+                break;
+
+            case 'SPEED_STREAKS':
+                // Fade out quickly
+                this.vx *= (1 - this.fadeSpeed * deltaTime);
+                this.vy *= (1 - this.fadeSpeed * deltaTime);
+                this.size = this.maxSize * lifeRatio;
+                break;
+
+            case 'SPARKS':
+                // Gravity and bouncing
+                this.vy += this.gravity * deltaTime;
+
+                // Bounce off canvas edges
+                if (this.y >= CANVAS_HEIGHT - this.size) {
+                    this.y = CANVAS_HEIGHT - this.size;
+                    this.vy *= -this.bounce;
+                }
+                if (this.x <= this.size || this.x >= CANVAS_WIDTH - this.size) {
+                    this.vx *= -this.bounce;
+                }
+
+                // Sparkle effect
+                if (this.sparkle) {
+                    this.size = this.maxSize * (0.5 + 0.5 * Math.sin(this.life * 20));
+                }
+                break;
+
+            case 'GLOW_ORBS':
+                // Floating motion
+                this.vx += Math.sin(this.floatOffset + this.life * 3) * this.floatStrength * deltaTime;
+                this.vy += Math.cos(this.floatOffset + this.life * 2) * this.floatStrength * deltaTime * 0.5;
+
+                // Gentle size pulsing
+                this.size = this.maxSize * (0.8 + 0.2 * Math.sin(this.life * 5));
+                this.glowSize = this.size * (2 + Math.sin(this.life * 3) * 0.5);
+                break;
+        }
+    }
+
+    draw(ctx) {
+        const lifeRatio = this.life / this.maxLife;
+
+        switch(this.type) {
+            case 'ROCKET_TRAIL':
+                this.drawRocketTrail(ctx, lifeRatio);
+                break;
+            case 'SPEED_STREAKS':
+                this.drawSpeedStreak(ctx, lifeRatio);
+                break;
+            case 'SPARKS':
+                this.drawSpark(ctx, lifeRatio);
+                break;
+            case 'GLOW_ORBS':
+                this.drawGlowOrb(ctx, lifeRatio);
+                break;
+        }
+    }
+
+    drawRocketTrail(ctx, lifeRatio) {
+        // Draw trail first
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        for (let i = 0; i < this.trail.length - 1; i++) {
+            const current = this.trail[i];
+            const next = this.trail[i + 1];
+            const trailAlpha = (current.life / 0.2) * lifeRatio * 0.6;
+
+            ctx.strokeStyle = `rgba(0, 229, 255, ${trailAlpha})`;
+            ctx.lineWidth = (this.size * (i / this.trail.length)) * 0.5;
+            ctx.beginPath();
+            ctx.moveTo(current.x, current.y);
+            ctx.lineTo(next.x, next.y);
+            ctx.stroke();
+        }
+
+        // Draw main particle with glow
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = this.color;
+        ctx.fillStyle = this.color;
+        ctx.globalAlpha = lifeRatio;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+    }
+
+    drawSpeedStreak(ctx, lifeRatio) {
+        // Draw streak line
+        // const streakLength = 15; // Not used in this version, velocity handles length
+        ctx.strokeStyle = this.color.replace(')', `, ${lifeRatio})`).replace('rgb', 'rgba');
+        ctx.lineWidth = this.size;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y);
+        ctx.lineTo(this.x - this.initialVx * 0.1, this.y - this.initialVy * 0.1);
+        ctx.stroke();
+    }
+
+    drawSpark(ctx, lifeRatio) {
+        // Flickering spark effect
+        const flicker = Math.random() < 0.7 ? 1 : 0.3;
+        ctx.fillStyle = this.color;
+        ctx.globalAlpha = lifeRatio * flicker;
+
+        // Draw cross shape for spark
+        ctx.fillRect(this.x - this.size/2, this.y - this.size/4, this.size, this.size/2);
+        ctx.fillRect(this.x - this.size/4, this.y - this.size/2, this.size/2, this.size);
+
+        ctx.globalAlpha = 1;
+    }
+
+    drawGlowOrb(ctx, lifeRatio) {
+        // Outer glow
+        const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.glowSize);
+        gradient.addColorStop(0, this.color);
+        gradient.addColorStop(1, 'rgba(0,0,0,0)');
+
+        ctx.fillStyle = gradient;
+        ctx.globalAlpha = lifeRatio * 0.3;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.glowSize, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Inner core
+        ctx.fillStyle = this.color;
+        ctx.globalAlpha = lifeRatio * 0.8;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.globalAlpha = 1;
+    }
+}
+
+// Enhanced particle system update function
+function updateAndDrawEnhancedPaddleParticles(paddle, particlesArray, lastPaddleYRef, paddleSpeedRef, isLeftPaddle, deltaTime) {
+    // Use the actual paddleSpeedRef variable for smoothing
+    let currentSmoothedSpeed = isLeftPaddle ? paddle1Speed : paddle2Speed;
+
+    // Calculate movement
+    let movementDirection = 0;
+    let currentRawSpeed = 0;
+
+    // Use the reference to the lastPaddleY variable
+    const lastY = isLeftPaddle ? lastPaddle1Y : lastPaddle2Y;
+
+    if (lastY !== null) {
+        const movement = paddle.y - lastY;
+        if (Math.abs(movement) > 0.1) {
+            movementDirection = movement > 0 ? 1 : -1;
+            currentRawSpeed = Math.abs(movement) / deltaTime;
+        }
+    }
+
+    // Update the global paddle speed variables (smooth it out)
+    if (isLeftPaddle) {
+        paddle1Speed = currentSmoothedSpeed * 0.8 + currentRawSpeed * 0.2;
+    } else {
+        paddle2Speed = currentSmoothedSpeed * 0.8 + currentRawSpeed * 0.2;
+    }
+
+    // Use the newly updated smoothed speed for particle emission
+    currentSmoothedSpeed = isLeftPaddle ? paddle1Speed : paddle2Speed;
+
+
+    // Generate particles based on movement and speed
+    // Emission threshold adjusted slightly for more frequent particles with subtle movement
+    if (movementDirection !== 0 && currentSmoothedSpeed > 5) {
+        const intensity = Math.min(currentSmoothedSpeed / 100, 1); // Max intensity at 100 speed
+
+        // Determine spawn position based on paddle side and direction
+        let spawnX, spawnY;
+        if (isLeftPaddle) {
+            // Particles come from behind the paddle
+            spawnX = paddle.x - PADDLE_WIDTH-2;
+            // Spawn along the paddle length
+            spawnY = paddle.y + paddle.length * Math.random();
+        } else {
+            // Particles come from behind the paddle
+            spawnX = paddle.x + PADDLE_WIDTH+2;
+            // Spawn along the paddle length
+            spawnY = paddle.y + paddle.length * Math.random();
+        }
+
+        // Add some randomness to spawn position
+        spawnX += (Math.random() - 0.5) * 8;
+        // spawnY already has randomness from paddle.length * Math.random()
+
+        // Generate different types of particles based on speed
+        if (intensity > 0.7) {
+            // High speed - sparks
+            for (let i = 0; i < PARTICLE_CONFIG.SPARKS.EMISSION_RATE * intensity; i++) {
+                particlesArray.push(new Particle(spawnX, spawnY, 'SPARKS', movementDirection, currentSmoothedSpeed));
+            }
+        }
+
+        if (intensity > 0.4) {
+            // Medium speed - speed streaks
+            for (let i = 0; i < PARTICLE_CONFIG.SPEED_STREAKS.EMISSION_RATE * intensity; i++) {
+                particlesArray.push(new Particle(spawnX, spawnY, 'SPEED_STREAKS', movementDirection, currentSmoothedSpeed));
+            }
+        }
+
+        // Always emit rocket trail and glow orbs
+        for (let i = 0; i < PARTICLE_CONFIG.ROCKET_TRAIL.EMISSION_RATE; i++) {
+            particlesArray.push(new Particle(spawnX, spawnY, 'ROCKET_TRAIL', movementDirection, currentSmoothedSpeed));
+        }
+
+        for (let i = 0; i < PARTICLE_CONFIG.GLOW_ORBS.EMISSION_RATE; i++) {
+            particlesArray.push(new Particle(spawnX, spawnY, 'GLOW_ORBS', movementDirection, currentSmoothedSpeed));
+        }
+    }
+
+    // Update and draw all particles
+    for (let i = particlesArray.length - 1; i >= 0; i--) {
+        const particle = particlesArray[i];
+
+        // Pass 'c' (context) to the draw method
+        if (!particle.update(deltaTime)) {
+            particlesArray.splice(i, 1);
+        } else {
+            particle.draw(c);
+        }
+    }
+}
+
+// --- END NEW PARTICLE SYSTEM CODE ---
 
 
 // --- Socket.IO Connection ---
@@ -318,6 +686,8 @@ playAgainButton.addEventListener("click", async () => {
     // Also reset paddle particles
     paddle1Particles = [];
     paddle2Particles = [];
+    paddle1Speed = 0; // Reset speed
+    paddle2Speed = 0; // Reset speed
     lastPaddle1Y = null;
     lastPaddle2Y = null;
 
@@ -354,6 +724,8 @@ returnHomeButton.addEventListener("click", () => {
     // Also reset paddle particles
     paddle1Particles = [];
     paddle2Particles = [];
+    paddle1Speed = 0; // Reset speed
+    paddle2Speed = 0; // Reset speed
     lastPaddle1Y = null;
     lastPaddle2Y = null;
 
@@ -525,9 +897,11 @@ function renderGame(GameState, deltaTime) {
         lastBallY = Ball.y;
     }
 
-    // --- Update and Draw Paddle Smoke Particles ---
-    updateAndDrawPaddleSmoke(Paddle1, paddle1Particles, lastPaddle1Y, deltaTime);
-    updateAndDrawPaddleSmoke(Paddle2, paddle2Particles, lastPaddle2Y, deltaTime);
+    // --- Update and Draw Paddle Particles ---
+    // NEW: Calling the enhanced particle function
+    updateAndDrawEnhancedPaddleParticles(Paddle1, paddle1Particles, lastPaddle1Y, paddle1Speed, true, deltaTime);
+    updateAndDrawEnhancedPaddleParticles(Paddle2, paddle2Particles, lastPaddle2Y, paddle2Speed, false, deltaTime);
+
 
     // Update last paddle Y positions for next frame's smoke generation
     lastPaddle1Y = Paddle1.y;
@@ -565,56 +939,9 @@ function drawPaddle(Paddle) {
     c.fillRect(Paddle.x, Paddle.y, PADDLE_WIDTH, Paddle.length);
 }
 
-
-// --- Paddle Smoke Particle System Functions ---
-function updateAndDrawPaddleSmoke(paddle, particlesArray, lastPaddleY, deltaTime) {
-    // Determine paddle movement direction
-    let movementDirection = 0; // 0: no movement, 1: down, -1: up
-    if (lastPaddleY !== null) {
-        if (paddle.y > lastPaddleY) {
-            movementDirection = 1; // Moving down
-        } else if (paddle.y < lastPaddleY) {
-            movementDirection = -1; // Moving up
-        }
-    }
-
-    // Generate new particles if paddle is moving
-    if (movementDirection !== 0) {
-        for (let i = 0; i < PADDLE_SMOKE_EMISSION_RATE; i++) {
-            particlesArray.push({
-                x: paddle.x + PADDLE_WIDTH / 2 + (Math.random() - 0.5) * PADDLE_WIDTH / 3, // Spawn near paddle center, slight randomness
-                y: (movementDirection === 1) ? paddle.y : paddle.y + paddle.length, // Spawn at top or bottom based on direction
-                vx: (Math.random() - 0.5) * 5, // Small horizontal velocity
-                vy: movementDirection * (Math.random() * 20 + 10), // Move away from paddle
-                life: PADDLE_SMOKE_PARTICLE_LIFETIME,
-                maxLife: PADDLE_SMOKE_PARTICLE_LIFETIME,
-                size: Math.random() * PADDLE_SMOKE_PARTICLE_SIZE + 1, // Random size
-            });
-        }
-    }
-
-    // Update and draw existing particles
-    for (let i = particlesArray.length - 1; i >= 0; i--) {
-        const p = particlesArray[i];
-
-        p.life -= deltaTime;
-        if (p.life <= 0) {
-            particlesArray.splice(i, 1); // Remove dead particles
-            continue;
-        }
-
-        p.x += p.vx * deltaTime;
-        p.y += p.vy * deltaTime;
-        p.size *= (1 - 0.5 * deltaTime); // Shrink slightly over time
-
-        // Draw particle
-        const alpha = p.life / p.maxLife; // Fade out based on remaining life
-        c.fillStyle = `rgba(200, 200, 200, ${alpha * 0.7})`; // Smoke color with fading alpha
-        c.beginPath();
-        c.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2);
-        c.fill();
-    }
-}
+// --- OLD PADDLE SMOKE PARTICLE SYSTEM FUNCTIONS (REMOVED) ---
+// function updateAndDrawPaddleSmoke(...) { ... }
+// -------------------------------------------------------------
 
 
 function drawPowerUp(powerUp) {
@@ -743,6 +1070,8 @@ window.addEventListener("beforeunload", () => {
     // Also reset paddle particles on unload
     paddle1Particles = [];
     paddle2Particles = [];
+    paddle1Speed = 0; // Reset speed
+    paddle2Speed = 0; // Reset speed
     lastPaddle1Y = null;
     lastPaddle2Y = null;
 
