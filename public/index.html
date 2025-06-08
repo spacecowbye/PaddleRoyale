@@ -7,7 +7,10 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-   
+    <div class="top-social-links">
+      <a href="https://x.com/spacecowbyte">Twitter</a>
+      <a href="https://www.linkedin.com/in/spacecowbye/">LinkedIn</a>
+    </div>
 
     <div class="container">
       <div class="text-content">
@@ -27,9 +30,8 @@
           </div>
         </div>
         <div class="mobile-not-supported">
-        
-         <p>Oops! Mobile not supported (can't touch this 🕺)</p>
-        <p>Try Paddle Royale on a desktop for the best experience</p>
+          <p>Oops! Mobile not supported (can't touch this 🕺)</p>
+          <p>Try Paddle Royale on a desktop for the best experience</p>
         </div>
       </div>
 
@@ -61,16 +63,9 @@
         <span class="close" onclick="closeErrorModal()">&times;</span>
         <h2>Error</h2>
         <p id="errorMessage">An unknown error occurred.</p>
-        <button id ="errorBtn" onclick="closeErrorModal()">OK</button>
+        <button id="errorBtn" onclick="closeErrorModal()">OK</button>
       </div>
     </div>
-
-    <footer>
-      <div class="social-links">
-        <a href="https://x.com/spacecowbyte">Twitter</a>
-        <a href="https://www.linkedin.com/in/spacecowbye/">LinkedIn</a>
-      </div>
-    </footer>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="index.js"></script>
