@@ -121,10 +121,21 @@ class GameManager {
       }, 2500);
 
       this.gameLoopInterval = setInterval(() => {
+        // Always update paddle positions, regardless of gamePaused
+        this.leftPaddle.updatePosition(this.CANVAS_HEIGHT);
+        this.rightPaddle.updatePosition(this.CANVAS_HEIGHT);
+
         if (!this.gamePaused) {
-          const gameState = this.updateGame();
-          this.io.to(this.ROOM_CODE).emit("GameUpdate", gameState);
+          // Only update ball and other game state when not paused
+          this.updateBall();
+          // You might not need to call updatePaddle here if it's external
+          // but ensure the state is emitted
         }
+
+        // Always emit the game state, even when paused, so clients see paddle movement
+        const gameState = this.getCurrentGameState(); // New method to get state
+        this.io.to(this.ROOM_CODE).emit("GameUpdate", gameState);
+
       }, this.TICK_RATE);
     }
   }
