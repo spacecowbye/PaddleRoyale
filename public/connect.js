@@ -24,8 +24,8 @@ let isGameOver = false;
 let animationId = null; // Stores the requestAnimationFrame ID
 
 
-const SERVER_URL = "https://paddleroyale.duckdns.org"
-//const SERVER_URL = "http://localhost:8080"
+//const SERVER_URL = "https://paddleroyale.duckdns.org"
+const SERVER_URL = "http://localhost:8080"
 
 const gameOverModal = document.getElementById("gameOverModal");
 const gameOverTitle = document.getElementById("gameOverTitle");
@@ -376,7 +376,7 @@ function updateAndDrawEnhancedPaddleParticles(paddle, particlesArray, lastPaddle
         let spawnX, spawnY;
         if (isLeftPaddle) {
             // Particles come from behind the paddle
-            spawnX = paddle.x - PADDLE_WIDTH-2;
+            spawnX = paddle.x - 5;
             // Spawn along the paddle length
             spawnY = paddle.y + paddle.length * Math.random();
         } else {
@@ -1076,7 +1076,21 @@ function drawMessageToScreen(message) {
     c.font = "30px Inter";
     c.fillStyle = "#7fff7f";
     c.textAlign = "center";
-    c.fillText(message, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 10);
+
+    // Define all messages to be displayed
+    const messages = [
+        "Read The Battle Briefing",
+        "First to 10 points wins",
+        message // The dynamic message passed to the function
+    ];
+
+    const totalMessages = messages.length;
+    const spacing = CANVAS_HEIGHT / (totalMessages + 1); // Divides the canvas height into even sections
+
+    messages.forEach((msg, index) => {
+        const yPos = spacing * (index + 1); // Calculate Y position for each message
+        c.fillText(msg, CANVAS_WIDTH / 2, yPos);
+    });
 }
 
 function createDashedLine() {

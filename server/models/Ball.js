@@ -9,13 +9,13 @@ class Ball {
     this.lastHitBy = null;
   }
   getRandomSpeedX() {
-    return (Math.random() > 0.5 ? 1 : -1) * (4 + Math.random() * 4);
+    return (Math.random() > 0.5 ? 1 : -1) * (3 + Math.random() * 1.5);
   }
   getRandomSpeedY() {
-    return (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 1.95);
+    return (Math.random() > 0.5 ? 1 : -1) * (1 + Math.random() * 1.2);
   }
   getRandomSpeedYAlter() {
-    return (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 3 + 2);
+    return (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 2 + 1);
 }
 
   reset(x, y) {

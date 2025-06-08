@@ -160,7 +160,7 @@ class GameSocketManager {
   StartGameCountdown(room) {
     let roomCode = room.roomCode;
     this.io.to(roomCode).emit("CountDownUpdate", "May the best player Win");
-    let countdown = 3;
+    let countdown = 6;
 
     const initialTimeout = setTimeout(() => {
       // Double-check room still exists before starting countdown
