@@ -44,8 +44,8 @@ class GameManager {
       this.player2
     );
     this.PowerUp = null;
-    // this.PowerUpTypes = ["Downsize", "Megaform", "uKnowReverse"]; // Store available power-ups
-    this.PowerUpTypes = ["Downsize", "uKnowReverse"]; // Store available power-ups
+    this.PowerUpTypes = ["Downsize", "Megaform", "uKnowReverse"]; // Store available power-ups
+    // this.PowerUpTypes = ["Downsize", "uKnowReverse"]; // Store available power-ups
     
 
     this.lastPowerUpType = null; // Track last generated type
@@ -216,7 +216,7 @@ updateScore(player) {
 
       // Ensure ball is outside paddle to prevent sticking
       this.ball.x = this.rightPaddle.x - this.ball.radius;
-        this.io.to(this.ROOM_CODE).emit("PaddleHit");
+        
     }
 
     // Left paddle collision
