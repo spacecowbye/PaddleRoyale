@@ -45,61 +45,71 @@ class GameManager {
     );
     this.PowerUp = null;
     this.PowerUpTypes = ["Downsize", "Megaform", "uKnowReverse"]; // Store available power-ups
-    // this.PowerUpTypes = ["Downsize", "uKnowReverse"]; // Store available power-ups
-    
 
     this.lastPowerUpType = null; // Track last generated type
     this.playerWithReversedControls = null;
 
-    //all intervals are here
+    // New properties to manage active power-ups for each paddle
+    this.activePowerUps = {
+      [this.player1]: null, // Stores { type: "Megaform", timeoutId: timeoutId }
+      [this.player2]: null,
+    };
+    this.powerUpTimeouts = {
+      [this.player1]: null,
+      [this.player2]: null,
+    };
 
+    //all intervals are here
     this.gameLoopInterval = null;
     this.powerUpTimeout = null;
     this.powerUpInterval = null;
-    this.handlePowerupTimeout = null;
   }
+
   addPlayer(player) {
     this.player2 = player;
     this.activePlayers = 2;
-  }
-updateScore(player) {
-  if (player === this.player1) {
-    this.player1Score += 1;
-  } else {
-    this.player2Score += 1;
+    // Initialize activePowerUps for player2 once they join
+    this.activePowerUps[this.player2] = null;
+    this.powerUpTimeouts[this.player2] = null;
   }
 
-  this.io.to(this.ROOM_CODE).emit("ScoreUpdate", {
-    leftPlayerScore: this.player1Score,
-    rightPlayerScore: this.player2Score,
-  });
+  updateScore(player) {
+    if (player === this.player1) {
+      this.player1Score += 1;
+    } else {
+      this.player2Score += 1;
+    }
 
-  const isGameOver = this.player1Score >= 10 || this.player2Score >= 10;
-
-  if (isGameOver) {
-    this.io.to(this.ROOM_CODE).emit("GameOver", {
-      winner: player,
-      finalScore: {
-        leftPlayerScore: this.player1Score,
-        rightPlayerScore: this.player2Score,
-      },
+    this.io.to(this.ROOM_CODE).emit("ScoreUpdate", {
+      leftPlayerScore: this.player1Score,
+      rightPlayerScore: this.player2Score,
     });
 
-    // Stop game loop instantly before ball moves again
-    this.gamePaused = true;
+    const isGameOver = this.player1Score >= 10 || this.player2Score >= 10;
 
-    return;
-  } else {
-    // Only pause and reset ball if game isn't over
-    this.gamePaused = true;
-    this.ball.reset(this.CANVAS_WIDTH / 2, this.CANVAS_HEIGHT / 2);
+    if (isGameOver) {
+      this.io.to(this.ROOM_CODE).emit("GameOver", {
+        winner: player,
+        finalScore: {
+          leftPlayerScore: this.player1Score,
+          rightPlayerScore: this.player2Score,
+        },
+      });
 
-    setTimeout(() => {
-      this.gamePaused = false;
-    }, 2000);
+      // Stop game loop instantly before ball moves again
+      this.gamePaused = true;
+
+      return;
+    } else {
+      // Only pause and reset ball if game isn't over
+      this.gamePaused = true;
+      this.ball.reset(this.CANVAS_WIDTH / 2, this.CANVAS_HEIGHT / 2);
+
+      setTimeout(() => {
+        this.gamePaused = false;
+      }, 2000);
+    }
   }
-}
-
 
   setupGameLoop() {
     if (!this.gameStarted) {
@@ -135,6 +145,7 @@ updateScore(player) {
       }, 15 * 1000);
     }
   }
+
   spawnPowerUp() {
     let newType;
 
@@ -148,9 +159,9 @@ updateScore(player) {
 
     console.log(this.PowerUp);
   }
+
   updateBall() {
     //POWERUP LOGIC
-
     if (
       this.ball &&
       this.PowerUp !== null &&
@@ -216,7 +227,6 @@ updateScore(player) {
 
       // Ensure ball is outside paddle to prevent sticking
       this.ball.x = this.rightPaddle.x - this.ball.radius;
-        
     }
 
     // Left paddle collision
@@ -268,36 +278,74 @@ updateScore(player) {
     this.rightPaddle.updatePosition(this.CANVAS_HEIGHT);
 
     let GameState = {
-      Ball : {
-        x : this.ball.x,
-        y : this.ball.y
+      Ball: {
+        x: this.ball.x,
+        y: this.ball.y,
       },
-      Paddle1:{
-        player : this.leftPaddle.player,
-        x : this.leftPaddle.x,
-        y : this.leftPaddle.y,
-        length : this.leftPaddle.length
+      Paddle1: {
+        player: this.leftPaddle.player,
+        x: this.leftPaddle.x,
+        y: this.leftPaddle.y,
+        length: this.leftPaddle.length,
       },
-      Paddle2:{
-        player : this.rightPaddle.player,
-        x : this.rightPaddle.x,
-        y : this.rightPaddle.y,
-        length : this.rightPaddle.length
+      Paddle2: {
+        player: this.rightPaddle.player,
+        x: this.rightPaddle.x,
+        y: this.rightPaddle.y,
+        length: this.rightPaddle.length,
       },
-   PowerUp: this.PowerUp !== null && this.PowerUp !== undefined
-  ? {
-      x: this.PowerUp.x,
-      y: this.PowerUp.y,
-      type: this.PowerUp.type
-    }
-  : {
-      x: null,
-      y: null,
-      type: null
-    }
+      PowerUp:
+        this.PowerUp !== null && this.PowerUp !== undefined
+          ? {
+              x: this.PowerUp.x,
+              y: this.PowerUp.y,
+              type: this.PowerUp.type,
+            }
+          : {
+              x: null,
+              y: null,
+              type: null,
+            },
     };
     return GameState;
   }
+
+  /**
+   * Clears any active power-up effect on a given paddle.
+   * @param {Paddle} paddle The paddle whose power-up to clear.
+   * @param {string} player The player associated with the paddle.
+   */
+  clearActivePowerUp(paddle, player) {
+    const activePowerUp = this.activePowerUps[player];
+    if (activePowerUp) {
+      clearTimeout(this.powerUpTimeouts[player]);
+      this.powerUpTimeouts[player] = null; // Clear the timeout ID
+
+      // Revert the effects of the old power-up
+      switch (activePowerUp.type) {
+        case "Megaform":
+          paddle.length -= 50;
+          break;
+        case "Downsize":
+          // This power-up affects the opponent, so we need to find the opponent's paddle
+          const opponentPaddle = (player === this.player1) ? this.rightPaddle : this.leftPaddle;
+          opponentPaddle.length += 25;
+          break;
+        case "uKnowReverse":
+          // This power-up affects the opponent, so we need to find the opponent's player identifier
+          const opponentPlayer = (player === this.player1) ? this.player2 : this.player1;
+          if (this.playerWithReversedControls === opponentPlayer) {
+              this.playerWithReversedControls = null;
+          }
+          break;
+      }
+      console.log(`${activePowerUp.type} wore off for player: ${player} due to new powerup.`);
+      this.io.to(this.ROOM_CODE).emit("PowerUpWoreOff", { player: player, type: activePowerUp.type });
+      this.activePowerUps[player] = null; // Mark power-up as inactive
+    }
+  }
+
+
   handlePowerUp(powerUp, player) {
     if (!powerUp || !player) return;
 
@@ -308,38 +356,77 @@ updateScore(player) {
     const opponentPlayer =
       player === this.player1 ? this.player2 : this.player1;
 
+    // Determine which player/paddle will be affected by the *new* power-up
+    let affectedPlayer = null;
+    let affectedPaddle = null;
+
+    switch (powerUp.type) {
+      case "Megaform":
+        affectedPlayer = player;
+        affectedPaddle = playerPaddle;
+        break;
+      case "Downsize":
+      case "uKnowReverse":
+        affectedPlayer = opponentPlayer;
+        affectedPaddle = opponentPaddle;
+        break;
+      default:
+        console.log("Unknown power-up type:", powerUp.type);
+        return;
+    }
+
+    // Clear any existing power-up on the affected player/paddle before applying the new one
+    if (affectedPlayer) {
+      this.clearActivePowerUp(affectedPaddle, affectedPlayer);
+    }
+
+    // Apply the new power-up
+    let timeoutId;
     switch (powerUp.type) {
       case "Megaform":
         playerPaddle.length += 50;
-        this.handlePowerupTimeout = setTimeout(() => {
+        timeoutId = setTimeout(() => {
           playerPaddle.length -= 50;
-          this.io.to(this.ROOM_CODE).emit("PowerUpWoreOff");
+          this.activePowerUps[player] = null;
+          this.powerUpTimeouts[player] = null;
+          this.io.to(this.ROOM_CODE).emit("PowerUpWoreOff", { player: player, type: "Megaform" });
         }, powerUp.timeToLive);
+        this.activePowerUps[player] = { type: "Megaform", timeoutId: timeoutId };
+        this.powerUpTimeouts[player] = timeoutId;
         break;
+
       case "Downsize":
         opponentPaddle.length -= 25;
-        this.handlePowerupTimeout = setTimeout(() => {
+        timeoutId = setTimeout(() => {
           opponentPaddle.length += 25;
-          this.io.to(this.ROOM_CODE).emit("PowerUpWoreOff");
+          this.activePowerUps[opponentPlayer] = null;
+          this.powerUpTimeouts[opponentPlayer] = null;
+          this.io.to(this.ROOM_CODE).emit("PowerUpWoreOff", { player: opponentPlayer, type: "Downsize" });
         }, powerUp.timeToLive);
+        this.activePowerUps[opponentPlayer] = { type: "Downsize", timeoutId: timeoutId };
+        this.powerUpTimeouts[opponentPlayer] = timeoutId;
+        break;
 
-        case "uKnowReverse":
-        // Set the opponent's controls to be reversed
+      case "uKnowReverse":
         this.playerWithReversedControls = opponentPlayer;
-        console.log(`Reversed controls for: ${opponentPlayer}`); // Log for debugging
+        console.log(`Reversed controls for: ${opponentPlayer}`);
 
-        // Set a timeout to revert controls after the power-up duration
-        this.handlePowerupTimeout = setTimeout(() => {
-          this.playerWithReversedControls = null; // Revert controls to normal
-          console.log(`Reversed controls wore off for: ${opponentPlayer}`); // Log for debugging
-          this.io.to(this.ROOM_CODE).emit("PowerUpWoreOff", { player: opponentPlayer, type: "uKnowReverse" }); // Emit an event when it wears off
+        timeoutId = setTimeout(() => {
+          this.playerWithReversedControls = null;
+          console.log(`Reversed controls wore off for: ${opponentPlayer}`);
+          this.activePowerUps[opponentPlayer] = null;
+          this.powerUpTimeouts[opponentPlayer] = null;
+          this.io.to(this.ROOM_CODE).emit("PowerUpWoreOff", { player: opponentPlayer, type: "uKnowReverse" });
         }, powerUp.timeToLive);
-        break; // And a break here!
+        this.activePowerUps[opponentPlayer] = { type: "uKnowReverse", timeoutId: timeoutId };
+        this.powerUpTimeouts[opponentPlayer] = timeoutId;
+        break;
 
       default:
         console.log("Unknown power-up type:", powerUp.type);
     }
   }
+
   destroy() {
     console.log(`Destroying GameManager for room: ${this.ROOM_CODE}`);
 
@@ -357,15 +444,15 @@ updateScore(player) {
       clearInterval(this.gameLoopInterval);
       this.gameLoopInterval = null;
     }
-    if (this.handlePowerupTimeout) {
-      clearTimeout(this.handlePowerupTimeout);
-      this.handlePowerupTimeout = null;
+    // Clear all active power-up timeouts
+    for (const player in this.powerUpTimeouts) {
+      if (this.powerUpTimeouts[player]) {
+        clearTimeout(this.powerUpTimeouts[player]);
+        this.powerUpTimeouts[player] = null;
+      }
     }
-    // Object.keys(this).forEach((property) => {
-    //   this[property] = null;
-    // });
+    this.activePowerUps = { [this.player1]: null, [this.player2]: null }; // Reset active power-ups
   }
 }
 
 module.exports = GameManager;
-//haha
