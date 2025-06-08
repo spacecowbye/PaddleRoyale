@@ -38,6 +38,9 @@ const abandonTitle = document.getElementById("abandonTitle");
 const abandonMessage = document.getElementById("abandonMessage");
 
 
+const scorePlayer1Element = document.getElementById("player1Score");
+const scorePlayer2Element = document.getElementById("player2Score");
+
 const RECOIL_DURATION = 0.1; // seconds, how long the paddle recoils
 const RECOIL_MAGNITUDE = 3; // pixels, how far the paddle recoils
 let paddle1RecoilTimer = 0; // Timer for Paddle1's recoil
@@ -491,10 +494,27 @@ socket.on("connect", async () => {
     });
 
     socket.on("ScoreUpdate", (data) => {
-        const { leftPlayerScore, rightPlayerScore } = data;
-        document.getElementById("player1Score").textContent = leftPlayerScore;
-        document.getElementById("player2Score").textContent = rightPlayerScore;
-    });
+    const { leftPlayerScore, rightPlayerScore } = data;
+
+    // Check if Player 1's score increased
+    if (parseInt(scorePlayer1Element.textContent) < leftPlayerScore) {
+        scorePlayer1Element.textContent = leftPlayerScore; // Update the score text
+        animateScorePop(scorePlayer1Element); // Trigger the pop animation
+        createPlusOneText(scorePlayer1Element, true); // Create the +1 text
+    }
+    // Check if Player 2's score increased
+    else if (parseInt(scorePlayer2Element.textContent) < rightPlayerScore) {
+        scorePlayer2Element.textContent = rightPlayerScore; // Update the score text
+        animateScorePop(scorePlayer2Element); // Trigger the pop animation
+        createPlusOneText(scorePlayer2Element, false); // Create the +1 text
+    }
+    // For initial setup or if scores are reset (no animation needed here)
+    else {
+        scorePlayer1Element.textContent = leftPlayerScore;
+        scorePlayer2Element.textContent = rightPlayerScore;
+    }
+    AudioManager.play('gameScore');
+});
 
     socket.on("GameUpdate", (GameState) => {
         currentGameState = GameState;
@@ -538,6 +558,37 @@ socket.on("connect", async () => {
     });
 });
 
+function animateScorePop(scoreElement) {
+    // Add the animation class
+    scoreElement.classList.add("score-pop");
+
+    // Remove the class after a short delay to reset the animation and allow it to be re-triggered
+    setTimeout(() => {
+        scoreElement.classList.remove("score-pop");
+    }, 300); // 300ms is slightly longer than the CSS transition (0.15s)
+}
+function createPlusOneText(scoreElement, isLeftPlayer) {
+    const plusOne = document.createElement("div");
+    plusOne.textContent = "+1";
+    plusOne.classList.add("score-plus-one");
+
+    // Get the position of the score element
+    const rect = scoreElement.getBoundingClientRect();
+
+    // Position the "+1" text relative to the score.
+    // You might need to adjust these values based on your exact layout.
+    // The 'scoreboard' div typically needs 'position: relative;' for this to work well.
+    plusOne.style.left = `${rect.right + 5}px`; // Just to the right of the score
+    plusOne.style.top = `${rect.top - 10}px`; // Slightly above the score
+
+    // If you have a specific UI container, append to that, otherwise body
+    document.body.appendChild(plusOne);
+
+    // Remove the element after its animation finishes
+    setTimeout(() => {
+        plusOne.remove();
+    }, 800); // Matches the 'floatUpAndFade' animation duration
+}
 // --- Game Over Screen Functions ---
 let celebrationParticles = [];
 let celebrationActive = false;

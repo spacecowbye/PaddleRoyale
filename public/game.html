@@ -229,32 +229,7 @@
         max-width: 600px;
         margin-bottom: 20px;
       }
-      /* Base score display style - apply this to the elements holding the scores */
-.score { /* CHANGED FROM .score-display */
-    font-size: 3em; /* Adjust to match your current display size */
-    font-weight: bold;
-    color: #FFFFFF; /* Default white text */
-    /* Add transitions for smooth animation */
-    transition: color 0.3s ease-out, transform 0.2s ease-out, text-shadow 0.3s ease-out;
-    display: inline-block; /* Crucial for transform to work */
-    min-width: 0.6em; /* Prevent numbers from shifting width too much */
-    text-align: center;
-}
 
-/* Style for when a score increases (using teal/aqua) */
-.score.score-increased { /* CHANGED FROM .score-display.score-increased */
-    color: #00FFFF; /* Vibrant Cyan/Aqua from your modal */
-    transform: scale(1.1); /* Pop out slightly */
-    text-shadow: 0 0 8px #00FFFF, 0 0 20px #00FFFF; /* Matching glow effect */
-}
-
-/* Separator style (optional, adjust if needed) */
-.score-divider { /* This is correct for your HTML */
-    font-size: 3em;
-    font-weight: bold;
-    color: #FFFFFF;
-    margin: 0 10px;
-}
       .score {
         font-size: 48px;
         font-weight: bold;
@@ -262,8 +237,42 @@
         text-shadow: 0 0 10px rgba(127, 255, 127, 0.7);
         width: 80px;
         text-align: center;
+        transition: transform 0.15s ease-out, color 0.15s ease-out; /* Smooth animation for pop and color change */
+        display: inline-block; /* Essential for 'transform' to work correctly */
       }
 
+
+/* Class to apply when a score increases */
+.score-pop {
+    transform: scale(1.3); /* Makes the score text 30% larger */
+    color: #FFD700; /* A vibrant gold color */
+    /* Optional: Add a subtle glow */
+    filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.8));
+}
+
+/* --- Optional: Styles for the "+1" floating text --- */
+.score-plus-one {
+    position: absolute; /* Allows it to float over other elements */
+    font-family: 'Press Start 2P', cursive;
+    font-size: 1.5em;
+    color: #00FF00; /* Bright green for positive feedback */
+    opacity: 1; /* Starts fully visible */
+    pointer-events: none; /* Ensures it doesn't interfere with clicks */
+    z-index: 10; /* Make sure it appears above other UI elements */
+    /* This animation is defined below using @keyframes */
+    animation: floatUpAndFade 0.8s ease-out forwards;
+}
+
+@keyframes floatUpAndFade {
+    0% {
+        transform: translateY(0) translateX(0) scale(0.8);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-50px) translateX(10px) scale(1.2);
+        opacity: 0;
+    }
+}
       .score-divider {
         margin: 0 30px;
         font-size: 36px;
