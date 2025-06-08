@@ -167,7 +167,7 @@ class GameSocketManager {
       if (!this.rooms.has(roomCode)) {
         return;
       }
-
+      
       const countdownInterval = setInterval(() => {
         // Check if room still exists (players might have left)
         if (!this.rooms.has(roomCode)) {
