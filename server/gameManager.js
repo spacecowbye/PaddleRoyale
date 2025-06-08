@@ -283,11 +283,7 @@ class GameManager {
     }
   }
 
-  updateGame() {
-    this.updateBall();
-    this.leftPaddle.updatePosition(this.CANVAS_HEIGHT);
-    this.rightPaddle.updatePosition(this.CANVAS_HEIGHT);
-
+ getCurrentGameState() {
     let GameState = {
       Ball: {
         x: this.ball.x,
