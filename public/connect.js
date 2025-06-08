@@ -24,8 +24,8 @@ let isGameOver = false;
 let animationId = null; // Stores the requestAnimationFrame ID
 
 
-//const SERVER_URL = "https://paddleroyale.duckdns.org"
-const SERVER_URL = "http://localhost:8080"
+const SERVER_URL = "https://paddleroyale.duckdns.org"
+//const SERVER_URL = "http://localhost:8080"
 
 const gameOverModal = document.getElementById("gameOverModal");
 const gameOverTitle = document.getElementById("gameOverTitle");
