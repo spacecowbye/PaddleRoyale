@@ -284,36 +284,37 @@ button {
     font-family: 'Press Start 2P', cursive;
 }
 
-/* Footer */
 
 
-/* Footer */
+
 footer {
     position: absolute;
     bottom: 0;
     left: 0;
     width: 100%;
-    padding: 15px;
-    text-align: center; /* This centers the text within the footer on desktop */
+    padding: 15px 20px; /* Adjust as needed for desktop */
     font-size: 12px;
     color: #6c7a94;
     display: flex; /* Make footer a flex container */
-    justify-content: space-between; /* Space out copyright and social links on desktop */
-    align-items: center; /* Vertically align them */
-    box-sizing: border-box; /* Include padding in width/height */
+    justify-content: center; /* Center the social links horizontally */
+    align-items: center; /* Vertically align them if footer had height */
+    box-sizing: border-box;
+    text-align: center; /* Fallback */
 }
 
 .social-links {
-    margin-top: 0; /* Remove default margin-top if present */
-    /* Add some padding for better touch targets on mobile if needed */
-    padding: 5px 0;
+    /* No need for complex flex properties here since it's the only child */
+    display: flex; /* Still needed for its own internal links */
+    gap: 20px; /* Space between Twitter and LinkedIn links */
+    justify-content: center; /* Center the links themselves */
+    width: 100%; /* Ensure it takes full width for centering */
 }
 
 .social-links a {
     color: #7fff7f;
-    margin: 0 10px;
     text-decoration: none;
     transition: color 0.3s;
+    white-space: nowrap; /* Prevent links from wrapping themselves */
 }
 
 .social-links a:hover {
@@ -509,26 +510,19 @@ footer {
         margin-left: auto; /* Center the game preview */
         margin-right: auto;
     }
-
-    /* Optional: Adjust footer for better mobile spacing */
- footer {
-        flex-direction: column; /* Stack items vertically */
-        position: static; /* Remove absolute positioning on mobile */
-        padding: 15px 0; /* Adjust padding as needed */
-        gap: 10px; /* Add space between stacked items */
-        text-align: center; /* Ensure overall footer content is centered */
+     footer {
+        position: static; /* IMPORTANT: Remove absolute positioning on mobile */
+        padding: 15px 10px; /* Adjust padding for mobile */
+        
     }
 
-    /* Target the copyright div (the first div inside footer) */
-    footer > div:first-child {
-        order: 1; /* Pushes the copyright div to the second position */
-    }
-
-    /* Target the social links div */
     .social-links {
-        order: -1; /* Pushes the social links div to the first position */
-        width: 100%; /* Make it take full width */
-        margin-top: 0; /* Ensure no extra top margin pushes it down */
+        
+        display: flex;
+        justify-content: center;
+        gap: 15px; /* Maybe a little less gap on mobile */
+        width: 100%;
     }
+
     
 }
